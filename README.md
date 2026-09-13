@@ -4,8 +4,9 @@ A small static web app: a Leaflet map of Poland (OpenStreetMap tiles) where you
 define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
-No backend, no build step. It's three files: `index.html`, `style.css`,
-`app.js`, plus a placeholder dataset in `places-sample.js`.
+No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus two
+data files: `places-poland.js` (the real bundled dataset, 44,664 places) and
+`places-sample.js` (a small placeholder fallback).
 
 ## Run it
 
@@ -39,12 +40,30 @@ python3 -m http.server 8000
 
 ## About the data
 
-The app ships with `places-sample.js` — **~30 fabricated placeholder
-names** at plausible-looking coordinates inside Poland, just so the map isn't
-empty. They are not a real gazetteer; don't read anything into which "towns"
-appear to match.
+The app ships with the **real list by default**: `places-poland.js`, 44,664
+Polish cities and villages with coordinates (WGS 84).
 
-To load the real list, you don't need to touch any code:
+### Data source & license
+
+- Dataset: [mbroton/polish-geonames](https://github.com/mbroton/polish-geonames),
+  release `v0.4.0` — a snapshot of PRNG (Państwowy Rejestr Nazw
+  Geograficznych, Poland's National Register of Geographical Names) valid as
+  of 2026-01-01, maintained by GUGiK (Poland's Head Office of Geodesy and
+  Cartography).
+- License: **CC BY 4.0**. Attribution: data derived from the PRNG register
+  via mbroton/polish-geonames (CC BY 4.0). Keep this notice if you redistribute
+  `places-poland.js` or a derivative of it.
+- `places-poland.js` trims the upstream records down to the `{name, lat, lon}`
+  shape this app uses; the upstream dataset also carries `type` (city/village),
+  `province`, `district`, and `commune` fields if you want to re-fetch and use
+  those.
+
+`places-sample.js` (~30 fabricated placeholder names) still ships alongside
+it as a fallback and is only used if `places-poland.js` fails to load.
+
+### Loading your own data instead
+
+You don't need to touch any code to swap in a different dataset:
 
 - **Load JSON file** — pick a `.json` file containing an array like:
   ```json
@@ -59,16 +78,15 @@ To load the real list, you don't need to touch any code:
 
 Loading new data replaces the current set and re-fits the map to it.
 
-### Where to get a real list of Polish towns
+Other sources if you want to update or replace the bundled dataset later:
 
-- **GUS/TERYT** (Polish national register of localities) — the authoritative
-  source, covers every town and village.
+- **GUS/TERYT** (Polish national register of localities) — names/admin codes,
+  but no coordinates.
 - **OpenStreetMap Overpass API** — query `place=city|town|village` within
-  Poland's boundary, which also gives you coordinates directly.
-- **GeoNames** — has a Poland export with lat/lon and admin regions.
-
-Any of these can be converted to the `{name, lat, lon}` array shape with a
-short script.
+  Poland's boundary; gives coordinates directly.
+- **GeoNames** — `PL.zip` bulk export at
+  [download.geonames.org/export/dump](https://download.geonames.org/export/dump/),
+  with lat/lon and feature-class columns.
 
 ## What to extend first
 
@@ -81,14 +99,13 @@ Roughly in order of how much value they add for how little effort:
 2. **Regex or multi-pattern rules.** Right now it's a plain suffix match.
    Some users will want prefix matching, "contains", or a real regex for
    trickier patterns (e.g. `ów$` vs `ówka$`).
-3. **Load the full official dataset by default**, with the sample data only
-   shown if nothing else is available, and bundle a fetch/convert script
-   (e.g. pulling from Overpass) so the repo is self-sufficient.
-4. **Marker clustering** for when the real dataset has thousands of points —
-   `Leaflet.markercluster` is the standard plugin and drops in cleanly on top
-   of the existing `markerLayer`.
-5. **Shareable state.** Encode the current rules (and maybe the loaded
+3. **Marker clustering** for panning/zooming smoothness with thousands of
+   points on screen at once — `Leaflet.markercluster` is the standard plugin
+   and drops in cleanly on top of the existing `markerLayer`. (The map already
+   uses Leaflet's canvas renderer to keep the default ~44k-point dataset
+   responsive, but clustering would help further at low zoom levels.)
+4. **Shareable state.** Encode the current rules (and maybe the loaded
    dataset's source URL) into the page's URL hash so a configured view can be
    sent as a link.
-6. **Export.** A "download matches as CSV/GeoJSON" button per rule, for
+5. **Export.** A "download matches as CSV/GeoJSON" button per rule, for
    people who want to take the highlighted subset elsewhere.

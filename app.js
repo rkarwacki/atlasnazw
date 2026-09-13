@@ -10,7 +10,18 @@
   let nextRuleId = 1;
 
   /** @type {{name: string, lat: number, lon: number}[]} */
-  let places = Array.isArray(window.SAMPLE_PLACES) ? window.SAMPLE_PLACES : [];
+  let places = [];
+
+  /** @type {"poland" | "sample" | "custom"} */
+  let dataSource = "sample";
+
+  if (Array.isArray(window.POLAND_PLACES) && window.POLAND_PLACES.length) {
+    places = window.POLAND_PLACES;
+    dataSource = "poland";
+  } else if (Array.isArray(window.SAMPLE_PLACES)) {
+    places = window.SAMPLE_PLACES;
+    dataSource = "sample";
+  }
 
   let showUnmatched = false;
 
@@ -20,6 +31,8 @@
 
   const map = L.map("map", {
     zoomControl: true,
+    // Thousands of circle markers render far faster on canvas than SVG.
+    preferCanvas: true,
   }).setView([52.0, 19.3], 6);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -55,6 +68,7 @@
   const ruleEmptyEl = document.getElementById("rule-empty");
   const toggleUnmatchedEl = document.getElementById("toggle-unmatched");
   const placeCountEl = document.getElementById("place-count");
+  const placeSourceLabelEl = document.getElementById("place-source-label");
   const fileInput = document.getElementById("file-input");
   const pasteToggle = document.getElementById("paste-toggle");
   const pasteArea = document.getElementById("paste-area");
@@ -91,11 +105,18 @@
   // Rendering
   // ---------------------------------------------------------------------
 
+  const SOURCE_LABELS = {
+    poland: "towns/villages from the national geographic register (PRNG, CC BY 4.0 — see README)",
+    sample: "demo points (clearly-labeled placeholders, not a real gazetteer)",
+    custom: "points from your loaded file",
+  };
+
   function render() {
     renderMarkers();
     renderRuleList();
     renderLegend();
     placeCountEl.textContent = String(places.length);
+    placeSourceLabelEl.textContent = SOURCE_LABELS[dataSource] || "points";
   }
 
   function renderMarkers() {
@@ -258,6 +279,7 @@
       const parsed = JSON.parse(text);
       const normalized = normalizePlaces(parsed);
       places = normalized;
+      dataSource = "custom";
       setDataError(null);
       render();
       map.fitBounds(
