@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Suffix Atlas — Poland place-name highlighter</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="panel">
+    <header class="panel__header">
+      <h1>Suffix Atlas</h1>
+      <p class="panel__sub">Highlight Polish towns by name ending</p>
+    </header>
+
+    <section class="panel__section">
+      <h2>Add a rule</h2>
+      <form id="rule-form" class="rule-form">
+        <input
+          id="rule-suffix"
+          type="text"
+          placeholder="e.g. ów or owo"
+          autocomplete="off"
+          required
+        />
+        <input id="rule-color" type="color" value="#c0392b" title="Highlight color" />
+        <button type="submit">Add</button>
+      </form>
+      <p class="hint">Matching ignores case. Rules are checked top to bottom — the first one that fits a name wins.</p>
+    </section>
+
+    <section class="panel__section">
+      <h2>Active rules</h2>
+      <ul id="rule-list" class="rule-list"></ul>
+      <p id="rule-empty" class="hint">No rules yet — add one above to start highlighting.</p>
+    </section>
+
+    <section class="panel__section">
+      <label class="checkbox-row">
+        <input type="checkbox" id="toggle-unmatched" />
+        <span>Show non-matching towns as small dots</span>
+      </label>
+    </section>
+
+    <section class="panel__section">
+      <h2>Place data</h2>
+      <p class="hint">
+        Loaded with <span id="place-count">0</span> demo points (clearly-labeled placeholders,
+        not a real gazetteer). Swap in the real list any time.
+      </p>
+      <div class="data-actions">
+        <label class="file-btn">
+          Load JSON file
+          <input type="file" id="file-input" accept="application/json,.json" hidden />
+        </label>
+        <button id="paste-toggle" type="button" class="ghost-btn">Paste JSON instead</button>
+      </div>
+      <textarea id="paste-area" class="paste-area hidden"
+        placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
+      <div class="data-actions hidden" id="paste-buttons">
+        <button id="paste-load" type="button" class="ghost-btn">Load pasted data</button>
+      </div>
+      <p id="data-error" class="hint error hidden"></p>
+    </section>
+  </aside>
+
+  <main class="map-wrap">
+    <div id="map"></div>
+  </main>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="places-sample.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
