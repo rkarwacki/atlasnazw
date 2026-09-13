@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Suffix Atlas — Poland place-name highlighter</title>
+<title>Atlas Końcówek — polskie nazwy miejscowości</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,58 +16,72 @@
 
   <aside class="panel">
     <header class="panel__header">
-      <h1>Suffix Atlas</h1>
-      <p class="panel__sub">Highlight Polish towns by name ending</p>
+      <h1>Atlas Końcówek</h1>
+      <p class="panel__sub">Podświetlaj polskie miejscowości wg końcówki nazwy</p>
     </header>
 
     <section class="panel__section">
-      <h2>Add a rule</h2>
+      <h2>Dodaj regułę</h2>
       <form id="rule-form" class="rule-form">
         <input
           id="rule-suffix"
           type="text"
-          placeholder="e.g. ów or owo"
+          placeholder="np. ów lub owo"
           autocomplete="off"
           required
         />
-        <input id="rule-color" type="color" value="#c0392b" title="Highlight color" />
-        <button type="submit">Add</button>
+        <input id="rule-color" type="color" value="#e69f00" title="Kolor podświetlenia" />
+        <button type="submit">Dodaj</button>
       </form>
-      <p class="hint">Matching ignores case. Rules are checked top to bottom — the first one that fits a name wins.</p>
+      <p class="hint">Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.</p>
     </section>
 
     <section class="panel__section">
-      <h2>Active rules</h2>
+      <h2>Aktywne reguły</h2>
       <ul id="rule-list" class="rule-list"></ul>
-      <p id="rule-empty" class="hint">No rules yet — add one above to start highlighting.</p>
+      <p id="rule-empty" class="hint">Brak reguł — dodaj jedną powyżej, aby zacząć podświetlanie.</p>
     </section>
 
     <section class="panel__section">
-      <label class="checkbox-row">
-        <input type="checkbox" id="toggle-unmatched" />
-        <span>Show non-matching towns as small dots</span>
-      </label>
-    </section>
-
-    <section class="panel__section">
-      <h2>Place data</h2>
-      <p class="hint">
-        Loaded with <span id="place-count">0</span> <span id="place-source-label">points</span>.
-      </p>
-      <div class="data-actions">
-        <label class="file-btn">
-          Load JSON file
-          <input type="file" id="file-input" accept="application/json,.json" hidden />
+      <h2>Typ miejscowości</h2>
+      <div class="type-filter" id="type-filter">
+        <label class="checkbox-row">
+          <input type="radio" name="place-type" value="all" checked />
+          <span>Wszystkie</span>
         </label>
-        <button id="paste-toggle" type="button" class="ghost-btn">Paste JSON instead</button>
+        <label class="checkbox-row">
+          <input type="radio" name="place-type" value="city" />
+          <span>Tylko miasta</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="radio" name="place-type" value="village" />
+          <span>Tylko wsie</span>
+        </label>
       </div>
-      <textarea id="paste-area" class="paste-area hidden"
-        placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
-      <div class="data-actions hidden" id="paste-buttons">
-        <button id="paste-load" type="button" class="ghost-btn">Load pasted data</button>
-      </div>
-      <p id="data-error" class="hint error hidden"></p>
     </section>
+
+    <details class="panel__section advanced">
+      <summary>Zaawansowane</summary>
+      <div class="advanced__body">
+        <h2>Dane miejscowości</h2>
+        <p class="hint">
+          Liczba wczytanych miejscowości: <span id="place-count">0</span> — <span id="place-source-label">punktów</span>.
+        </p>
+        <div class="data-actions">
+          <label class="file-btn">
+            Wczytaj plik JSON
+            <input type="file" id="file-input" accept="application/json,.json" hidden />
+          </label>
+          <button id="paste-toggle" type="button" class="ghost-btn">Wklej JSON zamiast tego</button>
+        </div>
+        <textarea id="paste-area" class="paste-area hidden"
+          placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
+        <div class="data-actions hidden" id="paste-buttons">
+          <button id="paste-load" type="button" class="ghost-btn">Wczytaj wklejone dane</button>
+        </div>
+        <p id="data-error" class="hint error hidden"></p>
+      </div>
+    </details>
   </aside>
 
   <main class="map-wrap">

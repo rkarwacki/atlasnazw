@@ -9,7 +9,7 @@
   let rules = [];
   let nextRuleId = 1;
 
-  /** @type {{name: string, lat: number, lon: number}[]} */
+  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"}[]} */
   let places = [];
 
   /** @type {"poland" | "sample" | "custom"} */
@@ -23,7 +23,8 @@
     dataSource = "sample";
   }
 
-  let showUnmatched = false;
+  /** @type {"all" | "city" | "village"} */
+  let placeTypeFilter = "all";
 
   // ---------------------------------------------------------------------
   // Map setup
@@ -66,7 +67,7 @@
   const ruleColorInput = document.getElementById("rule-color");
   const ruleListEl = document.getElementById("rule-list");
   const ruleEmptyEl = document.getElementById("rule-empty");
-  const toggleUnmatchedEl = document.getElementById("toggle-unmatched");
+  const typeFilterEl = document.getElementById("type-filter");
   const placeCountEl = document.getElementById("place-count");
   const placeSourceLabelEl = document.getElementById("place-source-label");
   const fileInput = document.getElementById("file-input");
@@ -76,11 +77,46 @@
   const pasteLoadBtn = document.getElementById("paste-load");
   const dataErrorEl = document.getElementById("data-error");
 
-  // A palette to auto-suggest the next color, cycling if the user adds many rules.
-  const SUGGESTED_COLORS = [
-    "#c0392b", "#2e7d5b", "#2f6690", "#b8860b",
-    "#8e44ad", "#c96f2c", "#3a7d44", "#a4374d",
+  // Colorblind-friendly categorical palette (Okabe-Ito, minus black — a black
+  // swatch would vanish against this dark sidebar). Used in order for the
+  // first rules; once exhausted, new rules get a randomized color instead.
+  const COLORBLIND_PALETTE = [
+    "#e69f00", // orange
+    "#56b4e9", // sky blue
+    "#009e73", // bluish green
+    "#f0e442", // yellow
+    "#0072b2", // blue
+    "#d55e00", // vermillion
+    "#cc79a7", // reddish purple
   ];
+  let colorsUsedCount = 0;
+
+  function nextSuggestedColor() {
+    const color =
+      colorsUsedCount < COLORBLIND_PALETTE.length
+        ? COLORBLIND_PALETTE[colorsUsedCount]
+        : randomColor();
+    colorsUsedCount++;
+    return color;
+  }
+
+  function randomColor() {
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 55 + Math.floor(Math.random() * 20); // 55-75%
+    const lightness = 40 + Math.floor(Math.random() * 15); // 40-55%
+    return hslToHex(hue, saturation, lightness);
+  }
+
+  function hslToHex(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = (n) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) =>
+      l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const toHex = (x) => Math.round(255 * x).toString(16).padStart(2, "0");
+    return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+  }
 
   // ---------------------------------------------------------------------
   // Matching logic
@@ -101,57 +137,76 @@
     return null;
   }
 
+  function passesTypeFilter(place) {
+    if (placeTypeFilter === "all") return true;
+    // Places without type info (sample/custom data) are never hidden by the
+    // filter -- we simply don't know what they are.
+    if (!place.type) return true;
+    return place.type === placeTypeFilter;
+  }
+
+  /**
+   * Single pass over all places: computes which ones to render (with their
+   * matched rule) and a per-rule match count, so the three views below don't
+   * each re-scan the whole dataset separately.
+   */
+  function computeMatches() {
+    const counts = new Map(rules.map((r) => [r.id, 0]));
+    const matched = [];
+
+    for (const place of places) {
+      if (typeof place.lat !== "number" || typeof place.lon !== "number") continue;
+      if (!passesTypeFilter(place)) continue;
+
+      const rule = matchRule(place.name || "");
+      if (!rule) continue;
+
+      counts.set(rule.id, (counts.get(rule.id) || 0) + 1);
+      matched.push({ place, rule });
+    }
+
+    return { matched, counts };
+  }
+
   // ---------------------------------------------------------------------
   // Rendering
   // ---------------------------------------------------------------------
 
   const SOURCE_LABELS = {
-    poland: "towns/villages from the national geographic register (PRNG, CC BY 4.0 — see README)",
-    sample: "demo points (clearly-labeled placeholders, not a real gazetteer)",
-    custom: "points from your loaded file",
+    poland:
+      "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
+    sample: "przykładowych punktów (wymyślone placeholdery, nie prawdziwy wykaz)",
+    custom: "punktów z wczytanego pliku",
   };
 
   function render() {
-    renderMarkers();
-    renderRuleList();
-    renderLegend();
+    const { matched, counts } = computeMatches();
+    renderMarkers(matched);
+    renderRuleList(counts);
+    renderLegend(counts);
     placeCountEl.textContent = String(places.length);
-    placeSourceLabelEl.textContent = SOURCE_LABELS[dataSource] || "points";
+    placeSourceLabelEl.textContent = SOURCE_LABELS[dataSource] || "punktów";
   }
 
-  function renderMarkers() {
+  function renderMarkers(matched) {
     markerLayer.clearLayers();
 
-    for (const place of places) {
-      if (typeof place.lat !== "number" || typeof place.lon !== "number") continue;
-
-      const rule = matchRule(place.name || "");
-
-      if (!rule && !showUnmatched) continue;
-
-      const color = rule ? rule.color : "#7c8b83";
-      const radius = rule ? 7 : 3.5;
-      const weight = rule ? 2 : 1;
-      const fillOpacity = rule ? 0.85 : 0.5;
-
+    for (const { place, rule } of matched) {
       const marker = L.circleMarker([place.lat, place.lon], {
-        radius,
-        color,
-        weight,
-        fillColor: color,
-        fillOpacity,
+        radius: 7,
+        color: rule.color,
+        weight: 2,
+        fillColor: rule.color,
+        fillOpacity: 0.85,
       });
 
-      const label = rule
-        ? `<strong>${escapeHtml(place.name)}</strong><br/>matches "…${escapeHtml(rule.suffix)}"`
-        : `${escapeHtml(place.name)}`;
-
+      const label = `<strong>${escapeHtml(place.name)}</strong><br/>pasuje do „…${escapeHtml(rule.suffix)}”`;
       marker.bindTooltip(label, { className: "place-tooltip" });
       marker.addTo(markerLayer);
     }
   }
 
-  function renderRuleList() {
+  function renderRuleList(counts) {
     ruleListEl.innerHTML = "";
 
     if (rules.length === 0) {
@@ -161,9 +216,7 @@
     ruleEmptyEl.classList.add("hidden");
 
     for (const rule of rules) {
-      const count = places.filter(
-        (p) => matchRule(p.name || "") === rule
-      ).length;
+      const count = counts.get(rule.id) || 0;
 
       const li = document.createElement("li");
       li.className = "rule-item";
@@ -171,7 +224,7 @@
         <span class="rule-item__swatch" style="background:${rule.color}"></span>
         <span class="rule-item__suffix">${escapeHtml(rule.suffix)}</span>
         <span class="rule-item__count">${count}</span>
-        <button class="rule-item__remove" title="Remove rule" aria-label="Remove rule">&times;</button>
+        <button class="rule-item__remove" title="Usuń regułę" aria-label="Usuń regułę">&times;</button>
       `;
       li.querySelector(".rule-item__remove").addEventListener("click", () => {
         rules = rules.filter((r) => r.id !== rule.id);
@@ -181,18 +234,18 @@
     }
   }
 
-  function renderLegend() {
+  function renderLegend(counts) {
     const legend = document.getElementById("legend");
     if (!legend) return;
 
     if (rules.length === 0) {
-      legend.innerHTML = `<div class="legend__row">No rules active</div>`;
+      legend.innerHTML = `<div class="legend__row">Brak aktywnych reguł</div>`;
       return;
     }
 
     legend.innerHTML = rules
       .map((rule) => {
-        const count = places.filter((p) => matchRule(p.name || "") === rule).length;
+        const count = counts.get(rule.id) || 0;
         return `
           <div class="legend__row">
             <span class="legend__dot" style="background:${rule.color}"></span>
@@ -227,15 +280,15 @@
     });
 
     ruleSuffixInput.value = "";
-    ruleColorInput.value =
-      SUGGESTED_COLORS[rules.length % SUGGESTED_COLORS.length];
+    ruleColorInput.value = nextSuggestedColor();
 
     render();
   });
 
-  toggleUnmatchedEl.addEventListener("change", (e) => {
-    showUnmatched = e.target.checked;
-    renderMarkers();
+  typeFilterEl.addEventListener("change", (e) => {
+    if (e.target.name !== "place-type") return;
+    placeTypeFilter = e.target.value;
+    render();
   });
 
   // ---------------------------------------------------------------------
@@ -253,24 +306,26 @@
   }
 
   /**
-   * Accepts an array of objects and normalizes to {name, lat, lon}.
+   * Accepts an array of objects and normalizes to {name, lat, lon, type?}.
    * Supports "lon" or "lng" as the longitude key.
    */
   function normalizePlaces(raw) {
     if (!Array.isArray(raw)) {
-      throw new Error("Expected a JSON array of places.");
+      throw new Error("Oczekiwano tablicy JSON z miejscowościami.");
     }
     return raw.map((entry, i) => {
       const name = entry.name ?? entry.town ?? entry.city;
       const lat = Number(entry.lat ?? entry.latitude);
       const lon = Number(entry.lon ?? entry.lng ?? entry.longitude);
+      const type =
+        entry.type === "city" || entry.type === "village" ? entry.type : undefined;
 
       if (!name || Number.isNaN(lat) || Number.isNaN(lon)) {
         throw new Error(
-          `Entry ${i} is missing a usable name/lat/lon (got: ${JSON.stringify(entry)})`
+          `Wpis ${i} nie zawiera poprawnej nazwy/lat/lon (otrzymano: ${JSON.stringify(entry)})`
         );
       }
-      return { name: String(name), lat, lon };
+      return { name: String(name), lat, lon, type };
     });
   }
 
@@ -287,7 +342,7 @@
         { padding: [30, 30] }
       );
     } catch (err) {
-      setDataError("Couldn't load that data: " + err.message);
+      setDataError("Nie udało się wczytać danych: " + err.message);
     }
   }
 
@@ -296,7 +351,7 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => loadPlacesFromJsonText(String(reader.result));
-    reader.onerror = () => setDataError("Couldn't read that file.");
+    reader.onerror = () => setDataError("Nie udało się odczytać pliku.");
     reader.readAsText(file);
   });
 
@@ -314,8 +369,9 @@
   // ---------------------------------------------------------------------
 
   // Seed with two starter rules so the app shows something meaningful on load.
-  rules.push({ id: nextRuleId++, suffix: "ów", color: "#c0392b" });
-  rules.push({ id: nextRuleId++, suffix: "owo", color: "#2f6690" });
+  rules.push({ id: nextRuleId++, suffix: "ów", color: nextSuggestedColor() });
+  rules.push({ id: nextRuleId++, suffix: "owo", color: nextSuggestedColor() });
+  ruleColorInput.value = nextSuggestedColor();
 
   render();
 })();

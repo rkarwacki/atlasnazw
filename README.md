@@ -27,16 +27,24 @@ python3 -m http.server 8000
 ## How to use it
 
 1. Type an ending (e.g. `ów`, `owo`, `ice`, `in`) into the "Add a rule" box,
-   pick a color, and hit **Add**.
+   pick a color, and hit **Add**. The color field auto-advances through a
+   colorblind-friendly palette (Okabe-Ito) for each new rule; once that's
+   exhausted, further rules get a randomized color.
 2. Add more rules for other endings/colors. Matching is case-insensitive and
    checked top to bottom — a place gets the color of the **first** rule it
    matches, so put more specific endings above more general ones if they
    overlap (e.g. `ówko` above `ów`, if you don't want `ówko` towns painted
    with the `ów` color).
-3. Toggle **"Show non-matching towns as small dots"** if you want to see
-   everything that *didn't* match, in gray, for context.
+3. Use **"Typ miejscowości"** (place type) to restrict the map to cities,
+   villages, or both.
 4. The bottom-left legend and the sidebar rule list both show a live count of
-   matches per rule.
+   matches per rule. Only places matching an active rule are ever drawn —
+   there's no "show everything else too" mode, since with 44k+ places that
+   was the main thing making the map sluggish.
+
+The UI is in Polish. `places-poland.js` records carry a `type` of `"city"` or
+`"village"`; the type filter has no effect on records that don't carry that
+field (e.g. the sample data or a custom file that doesn't include `type`).
 
 ## About the data
 
@@ -53,10 +61,10 @@ Polish cities and villages with coordinates (WGS 84).
 - License: **CC BY 4.0**. Attribution: data derived from the PRNG register
   via mbroton/polish-geonames (CC BY 4.0). Keep this notice if you redistribute
   `places-poland.js` or a derivative of it.
-- `places-poland.js` trims the upstream records down to the `{name, lat, lon}`
-  shape this app uses; the upstream dataset also carries `type` (city/village),
-  `province`, `district`, and `commune` fields if you want to re-fetch and use
-  those.
+- `places-poland.js` trims the upstream records down to the `{name, lat, lon,
+  type}` shape this app uses (`type` is `"city"` or `"village"`, used by the
+  "Typ miejscowości" filter); the upstream dataset also carries `province`,
+  `district`, and `commune` fields if you want to re-fetch and use those.
 
 `places-sample.js` (~30 fabricated placeholder names) still ships alongside
 it as a fallback and is only used if `places-poland.js` fails to load.
@@ -68,12 +76,14 @@ You don't need to touch any code to swap in a different dataset:
 - **Load JSON file** — pick a `.json` file containing an array like:
   ```json
   [
-    { "name": "Kraków", "lat": 50.0647, "lon": 19.9450 },
+    { "name": "Kraków", "lat": 50.0647, "lon": 19.9450, "type": "city" },
     { "name": "Ostrów Wielkopolski", "lat": 51.6465, "lon": 17.8079 }
   ]
   ```
   (`lng`/`longitude`/`latitude` keys are also accepted, so most exports work
-  as-is.)
+  as-is. `type` is optional — only `"city"` and `"village"` are recognized;
+  omit it, or use any other value, if you don't want the type filter to
+  apply to that place.)
 - **Paste JSON instead** — same format, pasted directly, for quick testing.
 
 Loading new data replaces the current set and re-fits the map to it.

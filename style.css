@@ -81,6 +81,55 @@ html, body {
   display: none !important;
 }
 
+/* ---------- Type filter ---------- */
+
+.type-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Advanced (details/summary) ---------- */
+
+.advanced > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced > summary::before {
+  content: "▸";
+  font-size: 11px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.advanced[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced > summary:hover {
+  color: var(--accent-soft);
+}
+
+.advanced__body {
+  margin-top: 16px;
+}
+
+.advanced__body h2 {
+  margin-top: 0;
+}
+
 /* ---------- Rule form ---------- */
 
 .rule-form {
