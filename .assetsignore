@@ -1,0 +1,9 @@
+node_modules
+.git
+.claude
+scripts
+package.json
+package-lock.json
+wrangler.jsonc
+.assetsignore
+README.md
