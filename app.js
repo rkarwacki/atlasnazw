@@ -5,6 +5,10 @@
   // State
   // ---------------------------------------------------------------------
 
+  // The query string is parsed once at load time; it can seed the language,
+  // rules, and other settings below so a configuration can be shared via URL.
+  const initialQuery = new URLSearchParams(window.location.search);
+
   /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains", color: string}[]} */
   let rules = [];
   let nextRuleId = 1;
@@ -24,11 +28,11 @@
   }
 
   /** @type {"all" | "city" | "village"} */
-  let placeTypeFilter = "all";
+  let placeTypeFilter = validPlaceType(initialQuery.get("type")) || "all";
 
   /** @type {"dynamic" | "fixed"} */
-  let markerSizeMode = "dynamic";
-  let fixedMarkerRadius = 6;
+  let markerSizeMode = validMarkerSizeMode(initialQuery.get("markerSize")) || "dynamic";
+  let fixedMarkerRadius = validMarkerRadius(initialQuery.get("markerRadius")) ?? 6;
 
   // ---------------------------------------------------------------------
   // i18n
@@ -141,7 +145,7 @@
     }
   }
 
-  let currentLang = loadStoredLang() === "en" ? "en" : "pl";
+  let currentLang = validLang(initialQuery.get("lang")) || (loadStoredLang() === "en" ? "en" : "pl");
 
   function t(key, vars) {
     let str = TRANSLATIONS[currentLang][key] ?? TRANSLATIONS.pl[key] ?? key;
@@ -170,11 +174,91 @@
   }
 
   // ---------------------------------------------------------------------
+  // URL query params (import/export settings via the URL)
+  // ---------------------------------------------------------------------
+
+  const VALID_MATCH_TYPES = new Set(["suffix", "prefix", "contains"]);
+
+  function validLang(v) {
+    return v === "pl" || v === "en" ? v : null;
+  }
+
+  function validPlaceType(v) {
+    return v === "all" || v === "city" || v === "village" ? v : null;
+  }
+
+  function validMarkerSizeMode(v) {
+    return v === "dynamic" || v === "fixed" ? v : null;
+  }
+
+  function validMarkerRadius(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.min(20, Math.max(1, Math.round(n))) : null;
+  }
+
+  function encodeRules(ruleList) {
+    return ruleList
+      .map((r) => `${r.matchType}:${encodeURIComponent(r.pattern)}:${encodeURIComponent(r.color)}`)
+      .join(",");
+  }
+
+  /**
+   * Parses the "rules" query param back into rule objects. Each rule is
+   * encoded as "matchType:pattern:color", rules joined by commas; pattern
+   * and color are individually URI-encoded so they can't collide with those
+   * delimiters. Returns null (fall back to defaults) if absent or unusable.
+   */
+  function decodeRules(raw) {
+    if (!raw) return null;
+    try {
+      const decoded = [];
+      for (const part of raw.split(",")) {
+        if (!part) continue;
+        const [matchTypeRaw, patternRaw, colorRaw] = part.split(":");
+        if (!patternRaw) continue;
+        const pattern = decodeURIComponent(patternRaw);
+        if (!pattern) continue;
+        const matchType = VALID_MATCH_TYPES.has(matchTypeRaw) ? matchTypeRaw : "suffix";
+        const color = colorRaw ? decodeURIComponent(colorRaw) : nextSuggestedColor();
+        decoded.push({ id: nextRuleId++, pattern, matchType, color });
+      }
+      return decoded.length ? decoded : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Mirrors the current settings into the URL's query string (via
+   * replaceState, so it never adds history entries) so the page can be
+   * bookmarked or shared to reproduce the same view.
+   */
+  function syncUrl() {
+    const params = new URLSearchParams();
+    params.set("lang", currentLang);
+    params.set("type", placeTypeFilter);
+    params.set("markerSize", markerSizeMode);
+    if (markerSizeMode === "fixed") {
+      params.set("markerRadius", String(fixedMarkerRadius));
+    }
+    if (rules.length) {
+      params.set("rules", encodeRules(rules));
+    }
+    const newSearch = "?" + params.toString();
+    if (newSearch !== window.location.search) {
+      history.replaceState(null, "", newSearch + window.location.hash);
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Map setup
   // ---------------------------------------------------------------------
 
   const map = L.map("map", {
     zoomControl: true,
+    // Smaller steps per +/- click and scroll tick (default is a full level).
+    zoomSnap: 0.5,
+    zoomDelta: 0.5,
     // Thousands of circle markers render far faster on canvas than SVG.
     preferCanvas: true,
   }).setView([52.0, 19.3], 6);
@@ -351,6 +435,7 @@
       count: places.length,
       source: t(SOURCE_LABEL_KEYS[dataSource] || "sourceCustom"),
     });
+    syncUrl();
   }
 
   // Marker radius grows with zoom: 1px fully zoomed out, up to 10px by the
@@ -470,6 +555,8 @@
 
     const dot = document.querySelector(`.legend__dot[data-rule-id="${rule.id}"]`);
     if (dot) dot.style.background = newColor;
+
+    syncUrl();
   }
 
   function escapeHtml(str) {
@@ -512,12 +599,14 @@
     markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
     markerSizeFixedRow.classList.toggle("hidden", markerSizeMode === "dynamic");
     applyMarkerRadius();
+    syncUrl();
   });
 
   markerSizeInput.addEventListener("input", () => {
     fixedMarkerRadius = Number(markerSizeInput.value);
     markerSizeValueEl.textContent = `${fixedMarkerRadius}px`;
     if (markerSizeMode === "fixed") applyMarkerRadius();
+    syncUrl();
   });
 
   panelToggleBtn.addEventListener("click", () => {
@@ -542,6 +631,20 @@
     updateLangSwitchUI();
     setDataError(lastErrorKey, lastErrorVars);
     render();
+  }
+
+  function syncTypeFilterUI() {
+    const radio = typeFilterEl.querySelector(
+      `input[name="place-type"][value="${placeTypeFilter}"]`
+    );
+    if (radio) radio.checked = true;
+  }
+
+  function syncMarkerSizeUI() {
+    markerSizeDynamicToggle.checked = markerSizeMode === "dynamic";
+    markerSizeFixedRow.classList.toggle("hidden", markerSizeMode === "dynamic");
+    markerSizeInput.value = String(fixedMarkerRadius);
+    markerSizeValueEl.textContent = `${fixedMarkerRadius}px`;
   }
 
   langSwitchEl.addEventListener("click", (e) => {
@@ -632,11 +735,20 @@
   // Initial render
   // ---------------------------------------------------------------------
 
-  // Seed with two starter rules so the app shows something meaningful on load.
-  rules.push({ id: nextRuleId++, pattern: "ów", matchType: "suffix", color: nextSuggestedColor() });
-  rules.push({ id: nextRuleId++, pattern: "owo", matchType: "suffix", color: nextSuggestedColor() });
+  // Rules can be imported from the URL's "rules" param (see decodeRules);
+  // otherwise seed with two starter rules so the app shows something
+  // meaningful on load.
+  const queryRules = decodeRules(initialQuery.get("rules"));
+  if (queryRules) {
+    rules = queryRules;
+  } else {
+    rules.push({ id: nextRuleId++, pattern: "ów", matchType: "suffix", color: nextSuggestedColor() });
+    rules.push({ id: nextRuleId++, pattern: "owo", matchType: "suffix", color: nextSuggestedColor() });
+  }
   ruleColorInput.value = nextSuggestedColor();
 
+  syncTypeFilterUI();
+  syncMarkerSizeUI();
   applyStaticTranslations();
   updateLangSwitchUI();
   render();
