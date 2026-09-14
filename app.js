@@ -34,6 +34,8 @@
   let markerSizeMode = validMarkerSizeMode(initialQuery.get("markerSize")) || "dynamic";
   let fixedMarkerRadius = validMarkerRadius(initialQuery.get("markerRadius")) ?? 6;
 
+  let showPartitions = initialQuery.get("partitions") === "1";
+
   // ---------------------------------------------------------------------
   // i18n
   // ---------------------------------------------------------------------
@@ -65,6 +67,11 @@
       typeCity: "Tylko miasta",
       typeVillage: "Tylko wsie",
       advancedSummary: "Zaawansowane",
+      overlaysHeading: "Nakładki mapy",
+      partitionsLabel: "Pokaż granice zaborów (1815–1918)",
+      partitionPruski: "Zabór pruski",
+      partitionAustriacki: "Zabór austriacki",
+      partitionRosyjski: "Zabór rosyjski",
       markerSizeHeading: "Rozmiar znaczników",
       dynamicSizeLabel: "Dynamiczny rozmiar (zależny od przybliżenia)",
       fixedSizeLabel: "Stały rozmiar",
@@ -110,6 +117,11 @@
       typeCity: "Cities only",
       typeVillage: "Villages only",
       advancedSummary: "Advanced",
+      overlaysHeading: "Map overlays",
+      partitionsLabel: "Show partition borders (1815–1918)",
+      partitionPruski: "Prussian partition",
+      partitionAustriacki: "Austrian partition",
+      partitionRosyjski: "Russian partition",
       markerSizeHeading: "Marker size",
       dynamicSizeLabel: "Dynamic size (based on zoom)",
       fixedSizeLabel: "Fixed size",
@@ -245,6 +257,9 @@
     if (markerSizeMode === "fixed") {
       params.set("markerRadius", String(fixedMarkerRadius));
     }
+    if (showPartitions) {
+      params.set("partitions", "1");
+    }
     if (rules.length) {
       params.set("rules", encodeRules(rules));
     }
@@ -279,6 +294,37 @@
     [59.0, 33.0],
   ]);
 
+  const PARTITION_COLORS = {
+    pruski: "#b35806",
+    austriacki: "#1b7837",
+    rosyjski: "#2166ac",
+  };
+  const PARTITION_NAME_KEYS = {
+    pruski: "partitionPruski",
+    austriacki: "partitionAustriacki",
+    rosyjski: "partitionRosyjski",
+  };
+
+  // A dedicated pane keeps the partition overlay under the markers (whose
+  // default overlayPane sits at z-index 400) but above the tile layer.
+  map.createPane("partitionsPane");
+  map.getPane("partitionsPane").style.zIndex = 350;
+  const partitionsLayer = L.geoJSON(window.PARTITIONS_GEOJSON || { type: "FeatureCollection", features: [] }, {
+    pane: "partitionsPane",
+    style: (feature) => ({
+      color: PARTITION_COLORS[feature.properties.id] || "#888",
+      weight: 1.5,
+      fillColor: PARTITION_COLORS[feature.properties.id] || "#888",
+      fillOpacity: 0.18,
+    }),
+    onEachFeature: (feature, layer) => {
+      layer.bindTooltip(() => t(PARTITION_NAME_KEYS[feature.properties.id] || ""), {
+        sticky: true,
+        className: "place-tooltip",
+      });
+    },
+  });
+
   const markerLayer = L.layerGroup().addTo(map);
 
   map.on("zoomend", applyMarkerRadius);
@@ -308,6 +354,7 @@
   const pasteButtons = document.getElementById("paste-buttons");
   const pasteLoadBtn = document.getElementById("paste-load");
   const dataErrorEl = document.getElementById("data-error");
+  const partitionsToggle = document.getElementById("partitions-toggle");
   const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
   const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
   const markerSizeInput = document.getElementById("marker-size-input");
@@ -601,6 +648,16 @@
     render();
   });
 
+  partitionsToggle.addEventListener("change", () => {
+    showPartitions = partitionsToggle.checked;
+    if (showPartitions) {
+      partitionsLayer.addTo(map);
+    } else {
+      partitionsLayer.remove();
+    }
+    syncUrl();
+  });
+
   markerSizeDynamicToggle.addEventListener("change", () => {
     markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
     markerSizeFixedRow.classList.toggle("hidden", markerSizeMode === "dynamic");
@@ -767,6 +824,8 @@
 
   syncTypeFilterUI();
   syncMarkerSizeUI();
+  partitionsToggle.checked = showPartitions;
+  if (showPartitions) partitionsLayer.addTo(map);
   applyStaticTranslations();
   updateLangSwitchUI();
   render();

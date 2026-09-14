@@ -4,9 +4,10 @@ A small static web app: a Leaflet map of Poland (OpenStreetMap tiles) where you
 define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
-No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus two
-data files: `places-poland.js` (the real bundled dataset, 44,664 places) and
-`places-sample.js` (a small placeholder fallback).
+No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
+files: `places-poland.js` (the real bundled dataset, 44,664 places),
+`places-sample.js` (a small placeholder fallback), and `partitions-poland.js`
+(an optional overlay of the historical Partitions of Poland borders).
 
 ## Run it
 
@@ -68,6 +69,26 @@ Polish cities and villages with coordinates (WGS 84).
 
 `places-sample.js` (~30 fabricated placeholder names) still ships alongside
 it as a fallback and is only used if `places-poland.js` fails to load.
+
+### Partition borders overlay
+
+The "Advanced" panel has a checkbox that overlays the borders of the three
+Partitions of Poland (zabory) as they stood from 1815 to 1918 — Prussian,
+Austrian, and Russian — clipped to modern Poland's outline, so you can see how
+name-ending clusters line up with historical borders (e.g. `-ów` vs. `-owo`).
+
+- Dataset: `partitions-poland.js`, derived from
+  [aourednik/historical-basemaps](https://github.com/aourednik/historical-basemaps)
+  (1815 world boundaries: Prussia, Austrian Empire, Russian Empire, Republic
+  of Kraków) intersected with a modern Poland outline from
+  [georgique/world-geojson](https://github.com/georgique/world-geojson).
+- License: both source repos are **GPL-3.0**; `partitions-poland.js` is a
+  derivative of that data. Keep this notice (and the GPL-3.0 license) if you
+  redistribute it.
+- This is a simplified reference overlay, not a survey-accurate historical
+  boundary — source polygons are approximate and the Republic of Kraków
+  (independent 1815–1846) is merged into the Austrian zone since it was
+  annexed by Austria for most of the partition period.
 
 ### Loading your own data instead
 
