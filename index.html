@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Atlas Końcówek — polskie nazwy miejscowości</title>
+<title data-i18n="title">Atlas Końcówek — polskie nazwy miejscowości</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,74 +14,119 @@
 
 <div class="app">
 
-  <aside class="panel">
+  <aside class="panel" id="panel">
     <header class="panel__header">
-      <h1>Atlas Końcówek</h1>
-      <p class="panel__sub">Podświetlaj polskie miejscowości wg końcówki nazwy</p>
+      <div class="panel__header-text">
+        <h1 data-i18n="appName">Atlas Końcówek</h1>
+        <p class="panel__sub" data-i18n="subtitle">Podświetlaj polskie miejscowości wg końcówki nazwy</p>
+      </div>
+      <div class="panel__header-actions">
+        <div class="lang-switch" id="lang-switch" role="group" aria-label="Language / Język">
+          <button type="button" class="lang-switch__btn" data-lang="pl">PL</button>
+          <button type="button" class="lang-switch__btn" data-lang="en">EN</button>
+        </div>
+        <button
+          type="button"
+          id="panel-toggle"
+          class="panel-toggle"
+          aria-expanded="true"
+          aria-controls="panel-body"
+          data-i18n-title="panelToggleTitle"
+          title="Zwiń/rozwiń panel"
+        >
+          <svg class="panel-toggle__icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M2 4.5H16M2 9H16M2 13.5H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
     </header>
 
-    <section class="panel__section">
-      <h2>Dodaj regułę</h2>
-      <form id="rule-form" class="rule-form">
-        <input
-          id="rule-suffix"
-          type="text"
-          placeholder="np. ów lub owo"
-          autocomplete="off"
-          required
-        />
-        <input id="rule-color" type="color" value="#e69f00" title="Kolor podświetlenia" />
-        <button type="submit">Dodaj</button>
-      </form>
-      <p class="hint">Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.</p>
-    </section>
+    <div class="panel__body" id="panel-body">
+      <section class="panel__section">
+        <h2 data-i18n="addRuleHeading">Dodaj regułę</h2>
+        <form id="rule-form" class="rule-form">
+          <input
+            id="rule-suffix"
+            type="text"
+            data-i18n-placeholder="suffixPlaceholder"
+            placeholder="np. ów lub owo"
+            autocomplete="off"
+            required
+          />
+          <select id="rule-match-type" class="rule-match-type" title="Rodzaj dopasowania" data-i18n-title="matchTypeTitle">
+            <option value="suffix" data-i18n="optionSuffix">Końcówka</option>
+            <option value="prefix" data-i18n="optionPrefix">Początek</option>
+            <option value="contains" data-i18n="optionContains">Zawiera</option>
+          </select>
+          <input id="rule-color" type="color" value="#e69f00" data-i18n-title="colorTitle" title="Kolor podświetlenia" />
+          <button
+            type="submit"
+            class="rule-form__add"
+            data-i18n-title="addButton"
+            data-i18n-aria-label="addButton"
+            title="Dodaj"
+            aria-label="Dodaj"
+          >+</button>
+        </form>
+        <p class="hint" data-i18n="addRuleHint">Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.</p>
+      </section>
 
-    <section class="panel__section">
-      <h2>Aktywne reguły</h2>
-      <ul id="rule-list" class="rule-list"></ul>
-      <p id="rule-empty" class="hint">Brak reguł — dodaj jedną powyżej, aby zacząć podświetlanie.</p>
-    </section>
+      <section class="panel__section">
+        <h2 data-i18n="activeRulesHeading">Aktywne reguły</h2>
+        <ul id="rule-list" class="rule-list"></ul>
+        <p id="rule-empty" class="hint" data-i18n="noRulesHint">Brak reguł — dodaj jedną powyżej, aby zacząć podświetlanie.</p>
+      </section>
 
-    <section class="panel__section">
-      <h2>Typ miejscowości</h2>
-      <div class="type-filter" id="type-filter">
-        <label class="checkbox-row">
-          <input type="radio" name="place-type" value="all" checked />
-          <span>Wszystkie</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="radio" name="place-type" value="city" />
-          <span>Tylko miasta</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="radio" name="place-type" value="village" />
-          <span>Tylko wsie</span>
-        </label>
-      </div>
-    </section>
-
-    <details class="panel__section advanced">
-      <summary>Zaawansowane</summary>
-      <div class="advanced__body">
-        <h2>Dane miejscowości</h2>
-        <p class="hint">
-          Liczba wczytanych miejscowości: <span id="place-count">0</span> — <span id="place-source-label">punktów</span>.
-        </p>
-        <div class="data-actions">
-          <label class="file-btn">
-            Wczytaj plik JSON
-            <input type="file" id="file-input" accept="application/json,.json" hidden />
+      <section class="panel__section">
+        <h2 data-i18n="placeTypeHeading">Typ miejscowości</h2>
+        <div class="type-filter" id="type-filter">
+          <label class="checkbox-row">
+            <input type="radio" name="place-type" value="all" checked />
+            <span data-i18n="typeAll">Wszystkie</span>
           </label>
-          <button id="paste-toggle" type="button" class="ghost-btn">Wklej JSON zamiast tego</button>
+          <label class="checkbox-row">
+            <input type="radio" name="place-type" value="city" />
+            <span data-i18n="typeCity">Tylko miasta</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="radio" name="place-type" value="village" />
+            <span data-i18n="typeVillage">Tylko wsie</span>
+          </label>
         </div>
-        <textarea id="paste-area" class="paste-area hidden"
-          placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
-        <div class="data-actions hidden" id="paste-buttons">
-          <button id="paste-load" type="button" class="ghost-btn">Wczytaj wklejone dane</button>
+      </section>
+
+      <details class="panel__section advanced">
+        <summary data-i18n="advancedSummary">Zaawansowane</summary>
+        <div class="advanced__body">
+          <h2 data-i18n="markerSizeHeading">Rozmiar znaczników</h2>
+          <label class="checkbox-row">
+            <input type="checkbox" id="marker-size-dynamic" checked />
+            <span data-i18n="dynamicSizeLabel">Dynamiczny rozmiar (zależny od przybliżenia)</span>
+          </label>
+          <div class="marker-size-fixed hidden" id="marker-size-fixed-row">
+            <label for="marker-size-input" data-i18n="fixedSizeLabel">Stały rozmiar</label>
+            <input type="range" id="marker-size-input" min="1" max="20" value="6" />
+            <span id="marker-size-value" class="marker-size-value">6px</span>
+          </div>
+
+          <h2 data-i18n="dataHeading">Dane miejscowości</h2>
+          <p class="hint" id="place-count-line"></p>
+          <div class="data-actions">
+            <label class="file-btn">
+              <span data-i18n="loadJsonFile">Wczytaj plik JSON</span>
+              <input type="file" id="file-input" accept="application/json,.json" hidden />
+            </label>
+            <button id="paste-toggle" type="button" class="ghost-btn" data-i18n="pasteInstead">Wklej JSON zamiast tego</button>
+          </div>
+          <textarea id="paste-area" class="paste-area hidden"
+            placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
+          <div class="data-actions hidden" id="paste-buttons">
+            <button id="paste-load" type="button" class="ghost-btn" data-i18n="loadPastedData">Wczytaj wklejone dane</button>
+          </div>
+          <p id="data-error" class="hint error hidden"></p>
         </div>
-        <p id="data-error" class="hint error hidden"></p>
-      </div>
-    </details>
+      </details>
+    </div>
   </aside>
 
   <main class="map-wrap">

@@ -5,7 +5,7 @@
   // State
   // ---------------------------------------------------------------------
 
-  /** @type {{id: number, suffix: string, color: string}[]} */
+  /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains", color: string}[]} */
   let rules = [];
   let nextRuleId = 1;
 
@@ -26,6 +26,149 @@
   /** @type {"all" | "city" | "village"} */
   let placeTypeFilter = "all";
 
+  /** @type {"dynamic" | "fixed"} */
+  let markerSizeMode = "dynamic";
+  let fixedMarkerRadius = 6;
+
+  // ---------------------------------------------------------------------
+  // i18n
+  // ---------------------------------------------------------------------
+
+  const LANG_STORAGE_KEY = "atlas-lang";
+
+  const TRANSLATIONS = {
+    pl: {
+      title: "Atlas Końcówek — polskie nazwy miejscowości",
+      appName: "Atlas Końcówek",
+      subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
+      panelToggleTitle: "Zwiń/rozwiń panel",
+      addRuleHeading: "Dodaj regułę",
+      suffixPlaceholder: "np. ów lub owo",
+      matchTypeTitle: "Rodzaj dopasowania",
+      optionSuffix: "Końcówka",
+      optionPrefix: "Początek",
+      optionContains: "Zawiera",
+      colorTitle: "Kolor podświetlenia",
+      addButton: "Dodaj",
+      addRuleHint:
+        "Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.",
+      activeRulesHeading: "Aktywne reguły",
+      noRulesHint: "Brak reguł — dodaj jedną powyżej, aby zacząć podświetlanie.",
+      placeTypeHeading: "Typ miejscowości",
+      typeAll: "Wszystkie",
+      typeCity: "Tylko miasta",
+      typeVillage: "Tylko wsie",
+      advancedSummary: "Zaawansowane",
+      markerSizeHeading: "Rozmiar znaczników",
+      dynamicSizeLabel: "Dynamiczny rozmiar (zależny od przybliżenia)",
+      fixedSizeLabel: "Stały rozmiar",
+      dataHeading: "Dane miejscowości",
+      placeCountText: "Liczba wczytanych miejscowości: {count} — {source}.",
+      sourcePoland:
+        "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
+      sourceSample: "przykładowych punktów (wymyślone placeholdery, nie prawdziwy wykaz)",
+      sourceCustom: "punktów z wczytanego pliku",
+      loadJsonFile: "Wczytaj plik JSON",
+      pasteInstead: "Wklej JSON zamiast tego",
+      loadPastedData: "Wczytaj wklejone dane",
+      removeRuleTitle: "Usuń regułę",
+      changeColorTitle: "Zmień kolor",
+      noActiveRules: "Brak aktywnych reguł",
+      matchesPattern: "pasuje do „{display}”",
+      errNotArray: "Oczekiwano tablicy JSON z miejscowościami.",
+      errInvalidEntry: "Wpis {index} nie zawiera poprawnej nazwy/lat/lon (otrzymano: {json})",
+      errLoadFailed: "Nie udało się wczytać danych: {message}",
+      errReadFailed: "Nie udało się odczytać pliku.",
+    },
+    en: {
+      title: "Suffix Atlas — Polish place names",
+      appName: "Suffix Atlas",
+      subtitle: "Highlight Polish place names by their ending",
+      panelToggleTitle: "Collapse/expand panel",
+      addRuleHeading: "Add rule",
+      suffixPlaceholder: "e.g. ów or owo",
+      matchTypeTitle: "Match type",
+      optionSuffix: "Ending",
+      optionPrefix: "Beginning",
+      optionContains: "Contains",
+      colorTitle: "Highlight color",
+      addButton: "Add",
+      addRuleHint:
+        "Case doesn't matter. Rules are checked top to bottom — the first matching name wins.",
+      activeRulesHeading: "Active rules",
+      noRulesHint: "No rules yet — add one above to start highlighting.",
+      placeTypeHeading: "Place type",
+      typeAll: "All",
+      typeCity: "Cities only",
+      typeVillage: "Villages only",
+      advancedSummary: "Advanced",
+      markerSizeHeading: "Marker size",
+      dynamicSizeLabel: "Dynamic size (based on zoom)",
+      fixedSizeLabel: "Fixed size",
+      dataHeading: "Place data",
+      placeCountText: "Loaded places: {count} — {source}.",
+      sourcePoland:
+        "places from the National Register of Geographic Names (PRNG, CC BY 4.0 — see README)",
+      sourceSample: "sample points (made-up placeholders, not a real list)",
+      sourceCustom: "points from the loaded file",
+      loadJsonFile: "Load JSON file",
+      pasteInstead: "Paste JSON instead",
+      loadPastedData: "Load pasted data",
+      removeRuleTitle: "Remove rule",
+      changeColorTitle: "Change color",
+      noActiveRules: "No active rules",
+      matchesPattern: "matches „{display}”",
+      errNotArray: "Expected a JSON array of places.",
+      errInvalidEntry: "Entry {index} is missing a valid name/lat/lon (got: {json})",
+      errLoadFailed: "Failed to load data: {message}",
+      errReadFailed: "Failed to read the file.",
+    },
+  };
+
+  function loadStoredLang() {
+    try {
+      return localStorage.getItem(LANG_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  function storeLang(lang) {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch {
+      // Ignore (e.g. private browsing with storage disabled).
+    }
+  }
+
+  let currentLang = loadStoredLang() === "en" ? "en" : "pl";
+
+  function t(key, vars) {
+    let str = TRANSLATIONS[currentLang][key] ?? TRANSLATIONS.pl[key] ?? key;
+    if (vars) {
+      for (const [name, value] of Object.entries(vars)) {
+        str = str.replaceAll(`{${name}}`, value);
+      }
+    }
+    return str;
+  }
+
+  function applyStaticTranslations() {
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.getAttribute("data-i18n"));
+    });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+      el.placeholder = t(el.getAttribute("data-i18n-placeholder"));
+    });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      el.title = t(el.getAttribute("data-i18n-title"));
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+      el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria-label")));
+    });
+  }
+
   // ---------------------------------------------------------------------
   // Map setup
   // ---------------------------------------------------------------------
@@ -44,13 +187,15 @@
 
   // Roughly constrain panning to the Poland area (generous padding).
   map.setMaxBounds([
-    [48.5, 12.0],
-    [55.5, 26.0],
+    [45.0, 5.0],
+    [59.0, 33.0],
   ]);
 
   const markerLayer = L.layerGroup().addTo(map);
 
-  const legendControl = L.control({ position: "bottomleft" });
+  map.on("zoomend", applyMarkerRadius);
+
+  const legendControl = L.control({ position: "topright" });
   legendControl.onAdd = function () {
     const div = L.DomUtil.create("div", "legend");
     div.id = "legend";
@@ -64,18 +209,25 @@
 
   const ruleForm = document.getElementById("rule-form");
   const ruleSuffixInput = document.getElementById("rule-suffix");
+  const ruleMatchTypeSelect = document.getElementById("rule-match-type");
   const ruleColorInput = document.getElementById("rule-color");
   const ruleListEl = document.getElementById("rule-list");
   const ruleEmptyEl = document.getElementById("rule-empty");
   const typeFilterEl = document.getElementById("type-filter");
-  const placeCountEl = document.getElementById("place-count");
-  const placeSourceLabelEl = document.getElementById("place-source-label");
   const fileInput = document.getElementById("file-input");
   const pasteToggle = document.getElementById("paste-toggle");
   const pasteArea = document.getElementById("paste-area");
   const pasteButtons = document.getElementById("paste-buttons");
   const pasteLoadBtn = document.getElementById("paste-load");
   const dataErrorEl = document.getElementById("data-error");
+  const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
+  const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
+  const markerSizeInput = document.getElementById("marker-size-input");
+  const markerSizeValueEl = document.getElementById("marker-size-value");
+  const panelEl = document.getElementById("panel");
+  const panelToggleBtn = document.getElementById("panel-toggle");
+  const langSwitchEl = document.getElementById("lang-switch");
+  const placeCountLineEl = document.getElementById("place-count-line");
 
   // Colorblind-friendly categorical palette (Okabe-Ito, minus black — a black
   // swatch would vanish against this dark sidebar). Used in order for the
@@ -123,18 +275,30 @@
   // ---------------------------------------------------------------------
 
   /**
-   * Returns the first rule whose suffix matches the given name, or null.
+   * Returns the first rule whose pattern matches the given name, or null.
    * Matching is case-insensitive and diacritic-sensitive (ów !== ow).
    */
   function matchRule(name) {
     const lower = name.toLowerCase();
     for (const rule of rules) {
-      const suffix = rule.suffix.toLowerCase();
-      if (suffix && lower.endsWith(suffix)) {
-        return rule;
-      }
+      const pattern = rule.pattern.toLowerCase();
+      if (!pattern) continue;
+      if (rule.matchType === "prefix" && lower.startsWith(pattern)) return rule;
+      if (rule.matchType === "contains" && lower.includes(pattern)) return rule;
+      if ((rule.matchType || "suffix") === "suffix" && lower.endsWith(pattern)) return rule;
     }
     return null;
+  }
+
+  /**
+   * Renders a rule's pattern with ellipses showing where it must appear in
+   * a name, e.g. "…ów" for a suffix or "Kra…" for a prefix.
+   */
+  function formatPatternDisplay(rule) {
+    const escaped = escapeHtml(rule.pattern);
+    if (rule.matchType === "prefix") return `${escaped}…`;
+    if (rule.matchType === "contains") return `…${escaped}…`;
+    return `…${escaped}`;
   }
 
   function passesTypeFilter(place) {
@@ -172,11 +336,10 @@
   // Rendering
   // ---------------------------------------------------------------------
 
-  const SOURCE_LABELS = {
-    poland:
-      "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
-    sample: "przykładowych punktów (wymyślone placeholdery, nie prawdziwy wykaz)",
-    custom: "punktów z wczytanego pliku",
+  const SOURCE_LABEL_KEYS = {
+    poland: "sourcePoland",
+    sample: "sourceSample",
+    custom: "sourceCustom",
   };
 
   function render() {
@@ -184,23 +347,55 @@
     renderMarkers(matched);
     renderRuleList(counts);
     renderLegend(counts);
-    placeCountEl.textContent = String(places.length);
-    placeSourceLabelEl.textContent = SOURCE_LABELS[dataSource] || "punktów";
+    placeCountLineEl.textContent = t("placeCountText", {
+      count: places.length,
+      source: t(SOURCE_LABEL_KEYS[dataSource] || "sourceCustom"),
+    });
+  }
+
+  // Marker radius grows with zoom: 1px fully zoomed out, up to 10px by the
+  // time towns are spread out enough to tell apart (around zoom 11).
+  const MARKER_RADIUS_MIN = 1;
+  const MARKER_RADIUS_MAX = 10;
+  const MARKER_RADIUS_MIN_ZOOM = 6;
+  const MARKER_RADIUS_MAX_ZOOM = 11;
+
+  function getMarkerRadius(zoom) {
+    if (zoom <= MARKER_RADIUS_MIN_ZOOM) return MARKER_RADIUS_MIN;
+    if (zoom >= MARKER_RADIUS_MAX_ZOOM) return MARKER_RADIUS_MAX;
+    const ratio =
+      (zoom - MARKER_RADIUS_MIN_ZOOM) /
+      (MARKER_RADIUS_MAX_ZOOM - MARKER_RADIUS_MIN_ZOOM);
+    return MARKER_RADIUS_MIN + ratio * (MARKER_RADIUS_MAX - MARKER_RADIUS_MIN);
+  }
+
+  function getCurrentRadius() {
+    return markerSizeMode === "fixed"
+      ? fixedMarkerRadius
+      : getMarkerRadius(map.getZoom());
+  }
+
+  function applyMarkerRadius() {
+    const radius = getCurrentRadius();
+    markerLayer.eachLayer((marker) => marker.setRadius(radius));
   }
 
   function renderMarkers(matched) {
     markerLayer.clearLayers();
 
+    const radius = getCurrentRadius();
+
     for (const { place, rule } of matched) {
       const marker = L.circleMarker([place.lat, place.lon], {
-        radius: 7,
+        radius,
         color: rule.color,
         weight: 2,
         fillColor: rule.color,
         fillOpacity: 0.85,
       });
+      marker.ruleId = rule.id;
 
-      const label = `<strong>${escapeHtml(place.name)}</strong><br/>pasuje do „…${escapeHtml(rule.suffix)}”`;
+      const label = `<strong>${escapeHtml(place.name)}</strong><br/>${t("matchesPattern", { display: formatPatternDisplay(rule) })}`;
       marker.bindTooltip(label, { className: "place-tooltip" });
       marker.addTo(markerLayer);
     }
@@ -221,11 +416,14 @@
       const li = document.createElement("li");
       li.className = "rule-item";
       li.innerHTML = `
-        <span class="rule-item__swatch" style="background:${rule.color}"></span>
-        <span class="rule-item__suffix">${escapeHtml(rule.suffix)}</span>
+        <input type="color" class="rule-item__swatch" value="${rule.color}" title="${t("changeColorTitle")}" />
+        <span class="rule-item__suffix">${formatPatternDisplay(rule)}</span>
         <span class="rule-item__count">${count}</span>
-        <button class="rule-item__remove" title="Usuń regułę" aria-label="Usuń regułę">&times;</button>
+        <button class="rule-item__remove" title="${t("removeRuleTitle")}" aria-label="${t("removeRuleTitle")}">&times;</button>
       `;
+      li.querySelector(".rule-item__swatch").addEventListener("input", (e) => {
+        onRuleColorChange(rule, e.target.value);
+      });
       li.querySelector(".rule-item__remove").addEventListener("click", () => {
         rules = rules.filter((r) => r.id !== rule.id);
         render();
@@ -239,7 +437,7 @@
     if (!legend) return;
 
     if (rules.length === 0) {
-      legend.innerHTML = `<div class="legend__row">Brak aktywnych reguł</div>`;
+      legend.innerHTML = `<div class="legend__row">${t("noActiveRules")}</div>`;
       return;
     }
 
@@ -248,12 +446,30 @@
         const count = counts.get(rule.id) || 0;
         return `
           <div class="legend__row">
-            <span class="legend__dot" style="background:${rule.color}"></span>
-            <span>…${escapeHtml(rule.suffix)} (${count})</span>
+            <span class="legend__dot" data-rule-id="${rule.id}" style="background:${rule.color}"></span>
+            <span>${formatPatternDisplay(rule)} (${count})</span>
           </div>
         `;
       })
       .join("");
+  }
+
+  /**
+   * Applies a color edit to an existing rule in place: updates already
+   * rendered markers and the legend dot directly, without rebuilding the
+   * rule list (which would interrupt the open color picker).
+   */
+  function onRuleColorChange(rule, newColor) {
+    rule.color = newColor;
+
+    markerLayer.eachLayer((marker) => {
+      if (marker.ruleId === rule.id) {
+        marker.setStyle({ color: newColor, fillColor: newColor });
+      }
+    });
+
+    const dot = document.querySelector(`.legend__dot[data-rule-id="${rule.id}"]`);
+    if (dot) dot.style.background = newColor;
   }
 
   function escapeHtml(str) {
@@ -270,12 +486,13 @@
 
   ruleForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const suffix = ruleSuffixInput.value.trim();
-    if (!suffix) return;
+    const pattern = ruleSuffixInput.value.trim();
+    if (!pattern) return;
 
     rules.push({
       id: nextRuleId++,
-      suffix,
+      pattern,
+      matchType: ruleMatchTypeSelect.value,
       color: ruleColorInput.value,
     });
 
@@ -291,17 +508,64 @@
     render();
   });
 
+  markerSizeDynamicToggle.addEventListener("change", () => {
+    markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
+    markerSizeFixedRow.classList.toggle("hidden", markerSizeMode === "dynamic");
+    applyMarkerRadius();
+  });
+
+  markerSizeInput.addEventListener("input", () => {
+    fixedMarkerRadius = Number(markerSizeInput.value);
+    markerSizeValueEl.textContent = `${fixedMarkerRadius}px`;
+    if (markerSizeMode === "fixed") applyMarkerRadius();
+  });
+
+  panelToggleBtn.addEventListener("click", () => {
+    const collapsed = panelEl.classList.toggle("collapsed");
+    panelToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+    // Collapsing/expanding the panel resizes the map container, but Leaflet
+    // caches its viewport size and won't notice on its own.
+    map.invalidateSize();
+  });
+
+  function updateLangSwitchUI() {
+    langSwitchEl.querySelectorAll(".lang-switch__btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.lang === currentLang);
+    });
+  }
+
+  function setLanguage(lang) {
+    if (lang !== "pl" && lang !== "en") return;
+    currentLang = lang;
+    storeLang(lang);
+    applyStaticTranslations();
+    updateLangSwitchUI();
+    setDataError(lastErrorKey, lastErrorVars);
+    render();
+  }
+
+  langSwitchEl.addEventListener("click", (e) => {
+    const btn = e.target.closest(".lang-switch__btn");
+    if (!btn) return;
+    setLanguage(btn.dataset.lang);
+  });
+
   // ---------------------------------------------------------------------
   // Event handlers: data loading
   // ---------------------------------------------------------------------
 
-  function setDataError(message) {
-    if (!message) {
+  let lastErrorKey = null;
+  let lastErrorVars = null;
+
+  function setDataError(key, vars) {
+    lastErrorKey = key;
+    lastErrorVars = vars;
+    if (!key) {
       dataErrorEl.classList.add("hidden");
       dataErrorEl.textContent = "";
       return;
     }
-    dataErrorEl.textContent = message;
+    dataErrorEl.textContent = t(key, vars);
     dataErrorEl.classList.remove("hidden");
   }
 
@@ -311,7 +575,7 @@
    */
   function normalizePlaces(raw) {
     if (!Array.isArray(raw)) {
-      throw new Error("Oczekiwano tablicy JSON z miejscowościami.");
+      throw new Error(t("errNotArray"));
     }
     return raw.map((entry, i) => {
       const name = entry.name ?? entry.town ?? entry.city;
@@ -322,7 +586,7 @@
 
       if (!name || Number.isNaN(lat) || Number.isNaN(lon)) {
         throw new Error(
-          `Wpis ${i} nie zawiera poprawnej nazwy/lat/lon (otrzymano: ${JSON.stringify(entry)})`
+          t("errInvalidEntry", { index: i, json: JSON.stringify(entry) })
         );
       }
       return { name: String(name), lat, lon, type };
@@ -342,7 +606,7 @@
         { padding: [30, 30] }
       );
     } catch (err) {
-      setDataError("Nie udało się wczytać danych: " + err.message);
+      setDataError("errLoadFailed", { message: err.message });
     }
   }
 
@@ -351,7 +615,7 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => loadPlacesFromJsonText(String(reader.result));
-    reader.onerror = () => setDataError("Nie udało się odczytać pliku.");
+    reader.onerror = () => setDataError("errReadFailed");
     reader.readAsText(file);
   });
 
@@ -369,9 +633,11 @@
   // ---------------------------------------------------------------------
 
   // Seed with two starter rules so the app shows something meaningful on load.
-  rules.push({ id: nextRuleId++, suffix: "ów", color: nextSuggestedColor() });
-  rules.push({ id: nextRuleId++, suffix: "owo", color: nextSuggestedColor() });
+  rules.push({ id: nextRuleId++, pattern: "ów", matchType: "suffix", color: nextSuggestedColor() });
+  rules.push({ id: nextRuleId++, pattern: "owo", matchType: "suffix", color: nextSuggestedColor() });
   ruleColorInput.value = nextSuggestedColor();
 
+  applyStaticTranslations();
+  updateLangSwitchUI();
   render();
 })();
