@@ -421,8 +421,9 @@ html, body {
   text-align: right;
 }
 
-/* ---------- Attribution ---------- */
+/* ---------- About / Attribution ---------- */
 
+.about .hint,
 .attribution .hint {
   display: flex;
   align-items: baseline;
@@ -430,6 +431,7 @@ html, body {
   flex-wrap: wrap;
 }
 
+.about .hint a,
 .attribution .hint a {
   flex-shrink: 0;
   color: var(--accent-soft);
@@ -438,6 +440,7 @@ html, body {
   border-bottom: 1px solid var(--line);
 }
 
+.about .hint a:hover,
 .attribution .hint a:hover {
   color: var(--accent);
   border-color: var(--accent);

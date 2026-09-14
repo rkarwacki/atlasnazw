@@ -9,7 +9,9 @@ whose name matches gets highlighted in that color.
 No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
 files: `places-poland.js` (the bundled dataset, 44,664 places) and
 `partitions-poland.js` (an optional overlay of the historical Partitions of
-Poland borders).
+Poland borders). `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, and
+`og-image.png` are pre-built static assets; `robots.txt` and `sitemap.xml`
+round out the basic SEO setup.
 
 ## Run it
 
@@ -112,6 +114,20 @@ replace the bundled dataset later:
 - **GeoNames** — `PL.zip` bulk export at
   [download.geonames.org/export/dump](https://download.geonames.org/export/dump/),
   with lat/lon and feature-class columns.
+
+## Regenerating the favicon / OG image
+
+`favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, and `og-image.png` are
+checked-in static files — nothing at runtime depends on Node. They're built
+by `scripts/build-favicon.js`, which draws the Poland silhouette straight
+from `partitions-poland.js`'s coordinates (the union of the three partition
+zones already traces modern Poland's outline). To regenerate them after a
+design tweak:
+
+```bash
+npm install
+node scripts/build-favicon.js
+```
 
 ## What to extend first
 

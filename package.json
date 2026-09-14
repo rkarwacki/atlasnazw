@@ -1,0 +1,12 @@
+{
+  "name": "atlasnazw",
+  "private": true,
+  "description": "Dev-only tooling for atlasnazw.pl (the site itself is a plain static app with no build step).",
+  "scripts": {
+    "build:favicon": "node scripts/build-favicon.js"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4",
+    "png-to-ico": "^3.0.2"
+  }
+}

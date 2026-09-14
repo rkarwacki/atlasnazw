@@ -43,8 +43,8 @@
       subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
       loadingLabel: "Ładowanie danych…",
       panelToggleTitle: "Zwiń/rozwiń panel",
-      panelHandleShow: "Pokaż filtry",
-      panelHandleHide: "Pokaż mniej",
+      panelHandleShow: "Pokaż menu",
+      panelHandleHide: "Ukryj menu",
       addRuleHeading: "Dodaj regułę",
       suffixPlaceholder: "np. ów lub owo",
       matchTypeTitle: "Rodzaj dopasowania",
@@ -78,6 +78,7 @@
       changeColorTitle: "Zmień kolor",
       noActiveRules: "Brak aktywnych reguł",
       matchesPattern: "pasuje do „{display}”",
+      aboutHeading: "O projekcie",
       attributionHeading: "Źródła danych",
       attributionPlaces:
         "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG) via mbroton/polish-geonames, licencja CC BY 4.0.",
@@ -127,6 +128,7 @@
       changeColorTitle: "Change color",
       noActiveRules: "No active rules",
       matchesPattern: "matches „{display}”",
+      aboutHeading: "About",
       attributionHeading: "Data sources",
       attributionPlaces:
         "Places: National Register of Geographic Names (PRNG) via mbroton/polish-geonames, CC BY 4.0 license.",
