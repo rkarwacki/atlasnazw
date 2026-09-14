@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title data-i18n="title">Atlas Końcówek — polskie nazwy miejscowości</title>
+<meta
+  name="description"
+  content="Interaktywna mapa Polski podświetlająca miejscowości wg końcówki nazwy (np. -ów, -owo, -ice) — 44 tys. miast i wsi, reguły dopasowania, nakładka granic zaborów."
+  data-i18n-content="metaDescription"
+/>
+<link rel="alternate" hreflang="pl" href="?lang=pl" />
+<link rel="alternate" hreflang="en" href="?lang=en" />
+<link rel="alternate" hreflang="x-default" href="?lang=pl" />
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,21 +125,21 @@
 
           <h2 data-i18n="dataHeading">Dane miejscowości</h2>
           <p class="hint" id="place-count-line"></p>
-          <div class="data-actions">
-            <label class="file-btn">
-              <span data-i18n="loadJsonFile">Wczytaj plik JSON</span>
-              <input type="file" id="file-input" accept="application/json,.json" hidden />
-            </label>
-            <button id="paste-toggle" type="button" class="ghost-btn" data-i18n="pasteInstead">Wklej JSON zamiast tego</button>
-          </div>
-          <textarea id="paste-area" class="paste-area hidden"
-            placeholder='[{"name":"Kraków","lat":50.0647,"lon":19.945}, ...]'></textarea>
-          <div class="data-actions hidden" id="paste-buttons">
-            <button id="paste-load" type="button" class="ghost-btn" data-i18n="loadPastedData">Wczytaj wklejone dane</button>
-          </div>
-          <p id="data-error" class="hint error hidden"></p>
         </div>
       </details>
+
+      <section class="panel__section attribution">
+        <h2 data-i18n="attributionHeading">Źródła danych</h2>
+        <p class="hint">
+          <span data-i18n="attributionPlaces">Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG) via mbroton/polish-geonames, licencja CC BY 4.0.</span>
+          <a href="https://github.com/mbroton/polish-geonames" target="_blank" rel="noopener">GitHub</a>
+        </p>
+        <p class="hint">
+          <span data-i18n="attributionPartitions">Granice zaborów: OpenHistoricalMap (CC0) + georgique/world-geojson (zarys Polski do przycięcia, GPL-3.0) — pochodna GPL-3.0.</span>
+          <a href="https://www.openhistoricalmap.org/" target="_blank" rel="noopener">OpenHistoricalMap</a>
+          <a href="https://github.com/georgique/world-geojson" target="_blank" rel="noopener">GitHub</a>
+        </p>
+      </section>
     </div>
 
     <button
@@ -150,12 +158,15 @@
 
   <main class="map-wrap">
     <div id="map"></div>
+    <div id="loading-overlay" class="loading-overlay" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="sr-only" data-i18n="loadingLabel">Ładowanie danych…</span>
+    </div>
   </main>
 
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="places-sample.js"></script>
 <script src="places-poland.js"></script>
 <script src="partitions-poland.js"></script>
 <script src="app.js"></script>

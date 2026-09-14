@@ -5,9 +5,9 @@ define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
 No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
-files: `places-poland.js` (the real bundled dataset, 44,664 places),
-`places-sample.js` (a small placeholder fallback), and `partitions-poland.js`
-(an optional overlay of the historical Partitions of Poland borders).
+files: `places-poland.js` (the bundled dataset, 44,664 places) and
+`partitions-poland.js` (an optional overlay of the historical Partitions of
+Poland borders).
 
 ## Run it
 
@@ -43,9 +43,9 @@ python3 -m http.server 8000
    there's no "show everything else too" mode, since with 44k+ places that
    was the main thing making the map sluggish.
 
-The UI is in Polish. `places-poland.js` records carry a `type` of `"city"` or
-`"village"`; the type filter has no effect on records that don't carry that
-field (e.g. the sample data or a custom file that doesn't include `type`).
+The UI is in Polish or English (toggle top-right). `places-poland.js` records
+carry a `type` of `"city"` or `"village"`; the type filter has no effect on
+records that don't carry that field.
 
 ## About the data
 
@@ -66,9 +66,6 @@ Polish cities and villages with coordinates (WGS 84).
   type}` shape this app uses (`type` is `"city"` or `"village"`, used by the
   "Typ miejscowości" filter); the upstream dataset also carries `province`,
   `district`, and `commune` fields if you want to re-fetch and use those.
-
-`places-sample.js` (~30 fabricated placeholder names) still ships alongside
-it as a fallback and is only used if `places-poland.js` fails to load.
 
 ### Partition borders overlay
 
@@ -99,26 +96,13 @@ name-ending clusters line up with historical borders (e.g. `-ów` vs. `-owo`).
   shifted slightly within 1815–1918, e.g. Kraków was an independent city-state
   until Austria annexed it in 1846).
 
-### Loading your own data instead
+### Updating the bundled dataset
 
-You don't need to touch any code to swap in a different dataset:
-
-- **Load JSON file** — pick a `.json` file containing an array like:
-  ```json
-  [
-    { "name": "Kraków", "lat": 50.0647, "lon": 19.9450, "type": "city" },
-    { "name": "Ostrów Wielkopolski", "lat": 51.6465, "lon": 17.8079 }
-  ]
-  ```
-  (`lng`/`longitude`/`latitude` keys are also accepted, so most exports work
-  as-is. `type` is optional — only `"city"` and `"village"` are recognized;
-  omit it, or use any other value, if you don't want the type filter to
-  apply to that place.)
-- **Paste JSON instead** — same format, pasted directly, for quick testing.
-
-Loading new data replaces the current set and re-fits the map to it.
-
-Other sources if you want to update or replace the bundled dataset later:
+There's no in-app way to load a different dataset — it always uses
+`places-poland.js`. To use a different dataset, replace that file's contents
+(an array of `{name, lat, lon, type?}` objects; `type` is optional, and only
+`"city"`/`"village"` are recognized). Other sources if you want to update or
+replace the bundled dataset later:
 
 - **GUS/TERYT** (Polish national register of localities) — names/admin codes,
   but no coordinates.

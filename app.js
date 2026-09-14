@@ -14,18 +14,7 @@
   let nextRuleId = 1;
 
   /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"}[]} */
-  let places = [];
-
-  /** @type {"poland" | "sample" | "custom"} */
-  let dataSource = "sample";
-
-  if (Array.isArray(window.POLAND_PLACES) && window.POLAND_PLACES.length) {
-    places = window.POLAND_PLACES;
-    dataSource = "poland";
-  } else if (Array.isArray(window.SAMPLE_PLACES)) {
-    places = window.SAMPLE_PLACES;
-    dataSource = "sample";
-  }
+  const places = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
   /** @type {"all" | "city" | "village"} */
   let placeTypeFilter = validPlaceType(initialQuery.get("type")) || "all";
@@ -45,8 +34,11 @@
   const TRANSLATIONS = {
     pl: {
       title: "Atlas Końcówek — polskie nazwy miejscowości",
+      metaDescription:
+        "Interaktywna mapa Polski podświetlająca miejscowości wg końcówki nazwy (np. -ów, -owo, -ice) — 44 tys. miast i wsi, reguły dopasowania, nakładka granic zaborów.",
       appName: "Atlas Końcówek",
       subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
+      loadingLabel: "Ładowanie danych…",
       panelToggleTitle: "Zwiń/rozwiń panel",
       panelHandleShow: "Pokaż filtry",
       panelHandleHide: "Pokaż mniej",
@@ -79,24 +71,23 @@
       placeCountText: "Liczba wczytanych miejscowości: {count} — {source}.",
       sourcePoland:
         "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
-      sourceSample: "przykładowych punktów (wymyślone placeholdery, nie prawdziwy wykaz)",
-      sourceCustom: "punktów z wczytanego pliku",
-      loadJsonFile: "Wczytaj plik JSON",
-      pasteInstead: "Wklej JSON zamiast tego",
-      loadPastedData: "Wczytaj wklejone dane",
       removeRuleTitle: "Usuń regułę",
       changeColorTitle: "Zmień kolor",
       noActiveRules: "Brak aktywnych reguł",
       matchesPattern: "pasuje do „{display}”",
-      errNotArray: "Oczekiwano tablicy JSON z miejscowościami.",
-      errInvalidEntry: "Wpis {index} nie zawiera poprawnej nazwy/lat/lon (otrzymano: {json})",
-      errLoadFailed: "Nie udało się wczytać danych: {message}",
-      errReadFailed: "Nie udało się odczytać pliku.",
+      attributionHeading: "Źródła danych",
+      attributionPlaces:
+        "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG) via mbroton/polish-geonames, licencja CC BY 4.0.",
+      attributionPartitions:
+        "Granice zaborów: OpenHistoricalMap (CC0) + georgique/world-geojson (zarys Polski do przycięcia, GPL-3.0) — pochodna GPL-3.0.",
     },
     en: {
       title: "Suffix Atlas — Polish place names",
+      metaDescription:
+        "Interactive map of Poland highlighting place names by their ending (e.g. -ów, -owo, -ice) — 44k cities and villages, match rules, historical partition borders overlay.",
       appName: "Suffix Atlas",
       subtitle: "Highlight Polish place names by their ending",
+      loadingLabel: "Loading data…",
       panelToggleTitle: "Collapse/expand panel",
       panelHandleShow: "Show filters",
       panelHandleHide: "Show less",
@@ -129,19 +120,15 @@
       placeCountText: "Loaded places: {count} — {source}.",
       sourcePoland:
         "places from the National Register of Geographic Names (PRNG, CC BY 4.0 — see README)",
-      sourceSample: "sample points (made-up placeholders, not a real list)",
-      sourceCustom: "points from the loaded file",
-      loadJsonFile: "Load JSON file",
-      pasteInstead: "Paste JSON instead",
-      loadPastedData: "Load pasted data",
       removeRuleTitle: "Remove rule",
       changeColorTitle: "Change color",
       noActiveRules: "No active rules",
       matchesPattern: "matches „{display}”",
-      errNotArray: "Expected a JSON array of places.",
-      errInvalidEntry: "Entry {index} is missing a valid name/lat/lon (got: {json})",
-      errLoadFailed: "Failed to load data: {message}",
-      errReadFailed: "Failed to read the file.",
+      attributionHeading: "Data sources",
+      attributionPlaces:
+        "Places: National Register of Geographic Names (PRNG) via mbroton/polish-geonames, CC BY 4.0 license.",
+      attributionPartitions:
+        "Partition borders: OpenHistoricalMap (CC0) + georgique/world-geojson (Poland outline used for clipping, GPL-3.0) — GPL-3.0 derivative.",
     },
   };
 
@@ -186,6 +173,9 @@
     });
     document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
       el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria-label")));
+    });
+    document.querySelectorAll("[data-i18n-content]").forEach((el) => {
+      el.setAttribute("content", t(el.getAttribute("data-i18n-content")));
     });
   }
 
@@ -348,12 +338,6 @@
   const ruleListEl = document.getElementById("rule-list");
   const ruleEmptyEl = document.getElementById("rule-empty");
   const typeFilterEl = document.getElementById("type-filter");
-  const fileInput = document.getElementById("file-input");
-  const pasteToggle = document.getElementById("paste-toggle");
-  const pasteArea = document.getElementById("paste-area");
-  const pasteButtons = document.getElementById("paste-buttons");
-  const pasteLoadBtn = document.getElementById("paste-load");
-  const dataErrorEl = document.getElementById("data-error");
   const partitionsToggle = document.getElementById("partitions-toggle");
   const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
   const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
@@ -366,14 +350,15 @@
   const langSwitchEl = document.getElementById("lang-switch");
   const placeCountLineEl = document.getElementById("place-count-line");
 
-  // Colorblind-friendly categorical palette (Okabe-Ito, minus black — a black
-  // swatch would vanish against this dark sidebar). Used in order for the
-  // first rules; once exhausted, new rules get a randomized color instead.
+  // Colorblind-friendly-ish categorical palette, minus black (vanishes
+  // against this dark sidebar) and minus yellow/green (blend into the
+  // yellow/green/white map terrain). Used in order for the first rules;
+  // once exhausted, new rules get a randomized color instead.
   const COLORBLIND_PALETTE = [
     "#e69f00", // orange
     "#56b4e9", // sky blue
-    "#009e73", // bluish green
-    "#f0e442", // yellow
+    "#911eb4", // purple
+    "#f032e6", // magenta
     "#0072b2", // blue
     "#d55e00", // vermillion
     "#cc79a7", // reddish purple
@@ -390,10 +375,13 @@
   }
 
   function randomColor() {
-    const hue = Math.floor(Math.random() * 360);
+    // Skip the yellow/green band (~50-160°) so random colors stay visible
+    // against the yellow/green/white map terrain.
+    const hue = Math.floor(Math.random() * 250);
+    const shiftedHue = (hue + 160) % 360;
     const saturation = 55 + Math.floor(Math.random() * 20); // 55-75%
     const lightness = 40 + Math.floor(Math.random() * 15); // 40-55%
-    return hslToHex(hue, saturation, lightness);
+    return hslToHex(shiftedHue, saturation, lightness);
   }
 
   function hslToHex(h, s, l) {
@@ -473,12 +461,6 @@
   // Rendering
   // ---------------------------------------------------------------------
 
-  const SOURCE_LABEL_KEYS = {
-    poland: "sourcePoland",
-    sample: "sourceSample",
-    custom: "sourceCustom",
-  };
-
   function render() {
     const { matched, counts } = computeMatches();
     renderMarkers(matched);
@@ -486,7 +468,7 @@
     renderLegend(counts);
     placeCountLineEl.textContent = t("placeCountText", {
       count: places.length,
-      source: t(SOURCE_LABEL_KEYS[dataSource] || "sourceCustom"),
+      source: t("sourcePoland"),
     });
     syncUrl();
   }
@@ -704,7 +686,6 @@
     storeLang(lang);
     applyStaticTranslations();
     updateLangSwitchUI();
-    setDataError(lastErrorKey, lastErrorVars);
     render();
   }
 
@@ -726,84 +707,6 @@
     const btn = e.target.closest(".lang-switch__btn");
     if (!btn) return;
     setLanguage(btn.dataset.lang);
-  });
-
-  // ---------------------------------------------------------------------
-  // Event handlers: data loading
-  // ---------------------------------------------------------------------
-
-  let lastErrorKey = null;
-  let lastErrorVars = null;
-
-  function setDataError(key, vars) {
-    lastErrorKey = key;
-    lastErrorVars = vars;
-    if (!key) {
-      dataErrorEl.classList.add("hidden");
-      dataErrorEl.textContent = "";
-      return;
-    }
-    dataErrorEl.textContent = t(key, vars);
-    dataErrorEl.classList.remove("hidden");
-  }
-
-  /**
-   * Accepts an array of objects and normalizes to {name, lat, lon, type?}.
-   * Supports "lon" or "lng" as the longitude key.
-   */
-  function normalizePlaces(raw) {
-    if (!Array.isArray(raw)) {
-      throw new Error(t("errNotArray"));
-    }
-    return raw.map((entry, i) => {
-      const name = entry.name ?? entry.town ?? entry.city;
-      const lat = Number(entry.lat ?? entry.latitude);
-      const lon = Number(entry.lon ?? entry.lng ?? entry.longitude);
-      const type =
-        entry.type === "city" || entry.type === "village" ? entry.type : undefined;
-
-      if (!name || Number.isNaN(lat) || Number.isNaN(lon)) {
-        throw new Error(
-          t("errInvalidEntry", { index: i, json: JSON.stringify(entry) })
-        );
-      }
-      return { name: String(name), lat, lon, type };
-    });
-  }
-
-  function loadPlacesFromJsonText(text) {
-    try {
-      const parsed = JSON.parse(text);
-      const normalized = normalizePlaces(parsed);
-      places = normalized;
-      dataSource = "custom";
-      setDataError(null);
-      render();
-      map.fitBounds(
-        L.latLngBounds(places.map((p) => [p.lat, p.lon])),
-        { padding: [30, 30] }
-      );
-    } catch (err) {
-      setDataError("errLoadFailed", { message: err.message });
-    }
-  }
-
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => loadPlacesFromJsonText(String(reader.result));
-    reader.onerror = () => setDataError("errReadFailed");
-    reader.readAsText(file);
-  });
-
-  pasteToggle.addEventListener("click", () => {
-    pasteArea.classList.toggle("hidden");
-    pasteButtons.classList.toggle("hidden");
-  });
-
-  pasteLoadBtn.addEventListener("click", () => {
-    loadPlacesFromJsonText(pasteArea.value);
   });
 
   // ---------------------------------------------------------------------
@@ -829,4 +732,7 @@
   applyStaticTranslations();
   updateLangSwitchUI();
   render();
+
+  const loadingOverlay = document.getElementById("loading-overlay");
+  if (loadingOverlay) loadingOverlay.classList.add("is-hidden");
 })();
