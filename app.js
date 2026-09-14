@@ -33,10 +33,10 @@
 
   const TRANSLATIONS = {
     pl: {
-      title: "Atlas Końcówek — polskie nazwy miejscowości",
+      title: "Atlas Nazw Miejscowości — polskie nazwy miejscowości",
       metaDescription:
         "Interaktywna mapa Polski podświetlająca miejscowości wg końcówki nazwy (np. -ów, -owo, -ice) — 44 tys. miast i wsi, reguły dopasowania, nakładka granic zaborów.",
-      appName: "Atlas Końcówek",
+      appName: "Atlas Nazw Miejscowości",
       subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
       loadingLabel: "Ładowanie danych…",
       panelToggleTitle: "Zwiń/rozwiń panel",
@@ -82,10 +82,10 @@
         "Granice zaborów: OpenHistoricalMap (CC0) + georgique/world-geojson (zarys Polski do przycięcia, GPL-3.0) — pochodna GPL-3.0.",
     },
     en: {
-      title: "Suffix Atlas — Polish place names",
+      title: "Town Name Atlas — Polish place names",
       metaDescription:
         "Interactive map of Poland highlighting place names by their ending (e.g. -ów, -owo, -ice) — 44k cities and villages, match rules, historical partition borders overlay.",
-      appName: "Suffix Atlas",
+      appName: "Town Name Atlas",
       subtitle: "Highlight Polish place names by their ending",
       loadingLabel: "Loading data…",
       panelToggleTitle: "Collapse/expand panel",

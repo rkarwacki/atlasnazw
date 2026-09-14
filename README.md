@@ -1,4 +1,6 @@
-# Suffix Atlas — Poland place-name highlighter
+# Atlas Nazw Miejscowości (Town Name Atlas) — Poland place-name highlighter
+
+Live at [atlasnazw.pl](https://atlasnazw.pl).
 
 A small static web app: a Leaflet map of Poland (OpenStreetMap tiles) where you
 define one or more "rules" — a name ending plus a color — and every place
@@ -20,7 +22,6 @@ need an internet connection, but no server.
 **Option B — tiny local server (recommended, avoids occasional browser
 file:// quirks)**
 ```bash
-cd suffix-map
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
