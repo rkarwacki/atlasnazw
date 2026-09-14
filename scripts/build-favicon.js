@@ -15,9 +15,11 @@ const sharp = require("sharp");
 const ROOT = path.join(__dirname, "..");
 
 const RED = "#d4213d";
+const WHITE = "#ffffff";
 const PAPER = "#eef1e9";
 const INK = "#14211f";
 const MUTED = "#9fb0a6";
+const LINE = "#3d4f47";
 
 function loadPolandOutlinePolygons() {
   const sandbox = { window: {} };
@@ -71,16 +73,27 @@ async function main() {
   const polygons = loadPolandOutlinePolygons();
   const polyMarkup = polygons.map((p) => `<polygon points="${p}"/>`).join("");
 
-  // stroke = fill closes hairline gaps between adjacent partition polygons
-  // (they were three separate GeoJSON features, not one clean union).
+  // Round flag of Poland: white top half, red bottom half, thin outline so
+  // the white half doesn't disappear against a light browser chrome.
   const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<rect width="100" height="100" rx="20" fill="${PAPER}"/>
-<g fill="${RED}" fill-rule="nonzero" stroke="${RED}" stroke-width="1.4" stroke-linejoin="round">${polyMarkup}</g>
+<defs><clipPath id="circle"><circle cx="50" cy="50" r="48"/></clipPath></defs>
+<g clip-path="url(#circle)">
+<rect x="0" y="0" width="100" height="50" fill="${WHITE}"/>
+<rect x="0" y="50" width="100" height="50" fill="${RED}"/>
+</g>
+<circle cx="50" cy="50" r="48" fill="none" stroke="${LINE}" stroke-width="1.5"/>
 </svg>`;
 
+  // Same flag on a solid square (apple-touch-icon needs an opaque
+  // background — iOS renders transparent corners as black).
   const squareSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
 <rect width="100" height="100" fill="${PAPER}"/>
-<g fill="${RED}" fill-rule="nonzero" stroke="${RED}" stroke-width="1.4" stroke-linejoin="round">${polyMarkup}</g>
+<defs><clipPath id="circle2"><circle cx="50" cy="50" r="44"/></clipPath></defs>
+<g clip-path="url(#circle2)">
+<rect x="6" y="6" width="88" height="44" fill="${WHITE}"/>
+<rect x="6" y="50" width="88" height="44" fill="${RED}"/>
+</g>
+<circle cx="50" cy="50" r="44" fill="none" stroke="${LINE}" stroke-width="1.2"/>
 </svg>`;
 
   const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
