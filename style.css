@@ -97,6 +97,19 @@ html, body {
 
 .panel-toggle__icon {
   display: block;
+  transition: transform 0.2s ease;
+}
+
+/* Base icon points down (menu can be expanded). When the panel is expanded,
+   flip it to point up (menu can be collapsed). */
+.panel:not(.collapsed) .panel-toggle__icon {
+  transform: rotate(180deg);
+}
+
+/* ---------- Panel handle (mobile bottom-sheet seam) ---------- */
+
+.panel-handle {
+  display: none;
 }
 
 /* ---------- Language switcher ---------- */
@@ -503,10 +516,18 @@ html, body {
   .panel {
     width: 100%;
     min-width: 0;
-    max-height: 45vh;
+    max-height: 48vh;
+    display: flex;
+    flex-direction: column;
+    border-right: none;
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.45);
+    position: relative;
+    z-index: 1;
   }
   .panel__header {
     padding: 14px 20px;
+    flex-shrink: 0;
   }
   .panel__header h1 {
     font-size: 17px;
@@ -518,15 +539,61 @@ html, body {
   .panel-toggle {
     display: inline-flex;
   }
+  /* iOS Safari zooms the page in on focus for any text input under 16px,
+     which shoves controls like the add-rule button off-screen. */
+  .rule-form input[type="text"],
+  .rule-form select.rule-match-type,
+  .paste-area {
+    font-size: 16px;
+  }
+  .panel__body {
+    overflow-y: auto;
+    min-height: 0;
+    padding-bottom: 16px;
+  }
+  .panel__section {
+    margin-top: 16px;
+    padding-top: 12px;
+  }
   .panel__body .panel__section:first-child {
     margin-top: 12px;
     padding-top: 12px;
   }
+  .advanced__body h2:not(:first-child) {
+    margin-top: 14px;
+  }
   .panel.collapsed {
     max-height: none;
+    border-radius: 0 0 10px 10px;
   }
   .panel.collapsed .panel__body {
     display: none;
+  }
+  .panel-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    flex-shrink: 0;
+    padding: 12px 12px 12px;
+    background: var(--ink);
+    border: none;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 14px 14px;
+    color: var(--text-muted);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .panel-handle:hover {
+    color: var(--accent-soft);
+  }
+  .panel-handle__icon {
+    transition: transform 0.2s ease;
+  }
+  .panel:not(.collapsed) .panel-handle__icon {
+    transform: rotate(180deg);
   }
   .map-wrap {
     flex: 1;

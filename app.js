@@ -46,6 +46,8 @@
       appName: "Atlas Końcówek",
       subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
       panelToggleTitle: "Zwiń/rozwiń panel",
+      panelHandleShow: "Pokaż filtry",
+      panelHandleHide: "Pokaż mniej",
       addRuleHeading: "Dodaj regułę",
       suffixPlaceholder: "np. ów lub owo",
       matchTypeTitle: "Rodzaj dopasowania",
@@ -89,6 +91,8 @@
       appName: "Suffix Atlas",
       subtitle: "Highlight Polish place names by their ending",
       panelToggleTitle: "Collapse/expand panel",
+      panelHandleShow: "Show filters",
+      panelHandleHide: "Show less",
       addRuleHeading: "Add rule",
       suffixPlaceholder: "e.g. ów or owo",
       matchTypeTitle: "Match type",
@@ -310,6 +314,8 @@
   const markerSizeValueEl = document.getElementById("marker-size-value");
   const panelEl = document.getElementById("panel");
   const panelToggleBtn = document.getElementById("panel-toggle");
+  const panelHandleBtn = document.getElementById("panel-handle");
+  const panelHandleLabelEl = document.getElementById("panel-handle-label");
   const langSwitchEl = document.getElementById("lang-switch");
   const placeCountLineEl = document.getElementById("place-count-line");
 
@@ -609,12 +615,24 @@
     syncUrl();
   });
 
-  panelToggleBtn.addEventListener("click", () => {
-    const collapsed = panelEl.classList.toggle("collapsed");
+  function setPanelCollapsed(collapsed) {
+    panelEl.classList.toggle("collapsed", collapsed);
     panelToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+    panelHandleBtn.setAttribute("aria-expanded", String(!collapsed));
+    const labelKey = collapsed ? "panelHandleShow" : "panelHandleHide";
+    panelHandleLabelEl.dataset.i18n = labelKey;
+    panelHandleLabelEl.textContent = t(labelKey);
     // Collapsing/expanding the panel resizes the map container, but Leaflet
     // caches its viewport size and won't notice on its own.
     map.invalidateSize();
+  }
+
+  panelToggleBtn.addEventListener("click", () => {
+    setPanelCollapsed(!panelEl.classList.contains("collapsed"));
+  });
+
+  panelHandleBtn.addEventListener("click", () => {
+    setPanelCollapsed(!panelEl.classList.contains("collapsed"));
   });
 
   function updateLangSwitchUI() {
