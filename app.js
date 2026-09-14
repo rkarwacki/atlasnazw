@@ -5,9 +5,12 @@
   // State
   // ---------------------------------------------------------------------
 
-  // The query string is parsed once at load time; it can seed the language,
-  // rules, and other settings below so a configuration can be shared via URL.
+  // The URL is parsed once at load time so a configuration can be shared as
+  // a link. Language lives in the query string (short, human-readable,
+  // worth keeping visible); everything else lives in the hash so the query
+  // string doesn't balloon with rule/marker/partition settings.
   const initialQuery = new URLSearchParams(window.location.search);
+  const initialHash = new URLSearchParams(window.location.hash.slice(1));
 
   /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains", color: string}[]} */
   let rules = [];
@@ -17,13 +20,13 @@
   const places = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
   /** @type {"all" | "city" | "village"} */
-  let placeTypeFilter = validPlaceType(initialQuery.get("type")) || "all";
+  let placeTypeFilter = validPlaceType(initialHash.get("type")) || "all";
 
   /** @type {"dynamic" | "fixed"} */
-  let markerSizeMode = validMarkerSizeMode(initialQuery.get("markerSize")) || "dynamic";
-  let fixedMarkerRadius = validMarkerRadius(initialQuery.get("markerRadius")) ?? 6;
+  let markerSizeMode = validMarkerSizeMode(initialHash.get("markerSize")) || "dynamic";
+  let fixedMarkerRadius = validMarkerRadius(initialHash.get("markerRadius")) ?? 6;
 
-  let showPartitions = initialQuery.get("partitions") === "1";
+  let showPartitions = initialHash.get("partitions") === "1";
 
   // ---------------------------------------------------------------------
   // i18n
@@ -235,27 +238,32 @@
   }
 
   /**
-   * Mirrors the current settings into the URL's query string (via
-   * replaceState, so it never adds history entries) so the page can be
-   * bookmarked or shared to reproduce the same view.
+   * Mirrors the current settings into the URL (via replaceState, so it
+   * never adds history entries) so the page can be bookmarked or shared to
+   * reproduce the same view. Language stays a query param; everything else
+   * moves into the hash so the query string doesn't balloon with rules.
    */
   function syncUrl() {
-    const params = new URLSearchParams();
-    params.set("lang", currentLang);
-    params.set("type", placeTypeFilter);
-    params.set("markerSize", markerSizeMode);
+    const queryParams = new URLSearchParams();
+    queryParams.set("lang", currentLang);
+    const newSearch = "?" + queryParams.toString();
+
+    const hashParams = new URLSearchParams();
+    hashParams.set("type", placeTypeFilter);
+    hashParams.set("markerSize", markerSizeMode);
     if (markerSizeMode === "fixed") {
-      params.set("markerRadius", String(fixedMarkerRadius));
+      hashParams.set("markerRadius", String(fixedMarkerRadius));
     }
     if (showPartitions) {
-      params.set("partitions", "1");
+      hashParams.set("partitions", "1");
     }
     if (rules.length) {
-      params.set("rules", encodeRules(rules));
+      hashParams.set("rules", encodeRules(rules));
     }
-    const newSearch = "?" + params.toString();
-    if (newSearch !== window.location.search) {
-      history.replaceState(null, "", newSearch + window.location.hash);
+    const newHash = "#" + hashParams.toString();
+
+    if (newSearch !== window.location.search || newHash !== window.location.hash) {
+      history.replaceState(null, "", newSearch + newHash);
     }
   }
 
@@ -716,7 +724,7 @@
   // Rules can be imported from the URL's "rules" param (see decodeRules);
   // otherwise seed with two starter rules so the app shows something
   // meaningful on load.
-  const queryRules = decodeRules(initialQuery.get("rules"));
+  const queryRules = decodeRules(initialHash.get("rules"));
   if (queryRules) {
     rules = queryRules;
   } else {

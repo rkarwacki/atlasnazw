@@ -129,8 +129,5 @@ Roughly in order of how much value they add for how little effort:
    and drops in cleanly on top of the existing `markerLayer`. (The map already
    uses Leaflet's canvas renderer to keep the default ~44k-point dataset
    responsive, but clustering would help further at low zoom levels.)
-4. **Shareable state.** Encode the current rules (and maybe the loaded
-   dataset's source URL) into the page's URL hash so a configured view can be
-   sent as a link.
-5. **Export.** A "download matches as CSV/GeoJSON" button per rule, for
+4. **Export.** A "download matches as CSV/GeoJSON" button per rule, for
    people who want to take the highlighted subset elsewhere.
