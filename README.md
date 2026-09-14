@@ -77,18 +77,26 @@ Partitions of Poland (zabory) as they stood from 1815 to 1918 — Prussian,
 Austrian, and Russian — clipped to modern Poland's outline, so you can see how
 name-ending clusters line up with historical borders (e.g. `-ów` vs. `-owo`).
 
-- Dataset: `partitions-poland.js`, derived from
-  [aourednik/historical-basemaps](https://github.com/aourednik/historical-basemaps)
-  (1815 world boundaries: Prussia, Austrian Empire, Russian Empire, Republic
-  of Kraków) intersected with a modern Poland outline from
+- Dataset: `partitions-poland.js`, built by fetching the administrative-boundary
+  relations for the **Province of Posen**, **West Prussia**, **Congress
+  Poland**, and the **Kingdom of Galicia and Lodomeria** from
+  [OpenHistoricalMap](https://www.openhistoricalmap.org/) (via its Overpass
+  API), unioning Posen+West Prussia into the Prussian zone, and intersecting
+  each with a modern Poland outline from
   [georgique/world-geojson](https://github.com/georgique/world-geojson).
-- License: both source repos are **GPL-3.0**; `partitions-poland.js` is a
-  derivative of that data. Keep this notice (and the GPL-3.0 license) if you
-  redistribute it.
-- This is a simplified reference overlay, not a survey-accurate historical
-  boundary — source polygons are approximate and the Republic of Kraków
-  (independent 1815–1846) is merged into the Austrian zone since it was
-  annexed by Austria for most of the partition period.
+- License: OpenHistoricalMap data is dedicated to the public domain (CC0)
+  unless a feature says otherwise; the Poland outline used for clipping is
+  GPL-3.0, so treat `partitions-poland.js` as a GPL-3.0 derivative and keep
+  this notice if you redistribute it.
+- This traces the actual former-province borders (so it excludes Silesia,
+  West Pomerania, and Warmia-Mazury core — German/Prussian territory since
+  long before the Partitions, not part of any zabór, even though it's now
+  part of Poland) rather than a whole-empire outline, which is both more
+  accurate and far more detailed at the seams than a country-scale dataset.
+  It's still a simplified reference overlay, not a survey-accurate boundary,
+  and picks one representative late-19th-century border per zone (borders
+  shifted slightly within 1815–1918, e.g. Kraków was an independent city-state
+  until Austria annexed it in 1846).
 
 ### Loading your own data instead
 
