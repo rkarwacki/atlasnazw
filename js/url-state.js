@@ -75,12 +75,28 @@ export function decodeRules(raw, startId, suggestColor) {
 }
 
 /**
- * Mirrors the current settings into the URL (via replaceState, so it
- * never adds history entries) so the page can be bookmarked or shared to
- * reproduce the same view. Language stays a query param; everything else
- * moves into the hash so the query string doesn't balloon with rules.
+ * Keeps the address bar down to just the language so links stay short and
+ * non-scary to share by copy/paste. Uses replaceState so it never adds
+ * history entries. The full state (rules, filters, etc.) is only ever put
+ * in a URL on demand, via buildShareUrl().
  */
-export function writeUrlState({
+export function writeUrlState({ lang }) {
+  const queryParams = new URLSearchParams();
+  queryParams.set("lang", lang);
+  const newSearch = "?" + queryParams.toString();
+
+  if (newSearch !== window.location.search || window.location.hash) {
+    history.replaceState(null, "", newSearch);
+  }
+}
+
+/**
+ * Builds a full URL encoding the current settings (rules, filters, marker
+ * size, overlays) so it can be copied and shared to reproduce this exact
+ * view. Language stays a query param; everything else lives in the hash so
+ * the query string doesn't balloon with rules.
+ */
+export function buildShareUrl({
   lang,
   placeTypeFilter,
   markerSizeMode,
@@ -91,7 +107,6 @@ export function writeUrlState({
 }) {
   const queryParams = new URLSearchParams();
   queryParams.set("lang", lang);
-  const newSearch = "?" + queryParams.toString();
 
   const hashParams = new URLSearchParams();
   hashParams.set("types", Array.from(placeTypeFilter).join(","));
@@ -108,9 +123,6 @@ export function writeUrlState({
   if (rules.length) {
     hashParams.set("rules", encodeRules(rules));
   }
-  const newHash = "#" + hashParams.toString();
 
-  if (newSearch !== window.location.search || newHash !== window.location.hash) {
-    history.replaceState(null, "", newSearch + newHash);
-  }
+  return `${window.location.origin}${window.location.pathname}?${queryParams.toString()}#${hashParams.toString()}`;
 }

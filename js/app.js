@@ -1,4 +1,4 @@
-import { state, syncUrl, rebuildPlaces, loadSubparts } from "./state.js";
+import { state, syncUrl, buildShareUrl, rebuildPlaces, loadSubparts } from "./state.js";
 import { initialHash, decodeRules } from "./url-state.js";
 import { t, getLang, setLang, applyStaticTranslations } from "./i18n.js";
 import { nextSuggestedColor } from "./colors.js";
@@ -65,6 +65,7 @@ const panelToggleBtn = document.getElementById("panel-toggle");
 const panelHandleBtn = document.getElementById("panel-handle");
 const panelHandleLabelEl = document.getElementById("panel-handle-label");
 const langSwitchEl = document.getElementById("lang-switch");
+const shareLinkButton = document.getElementById("share-link-button");
 
 // ---------------------------------------------------------------------
 // Event handlers: rules
@@ -225,6 +226,25 @@ langSwitchEl.addEventListener("click", (e) => {
   const btn = e.target.closest(".lang-switch__btn");
   if (!btn) return;
   setLanguage(btn.dataset.lang);
+});
+
+let shareButtonFeedbackTimeout = null;
+
+function showShareFeedback() {
+  clearTimeout(shareButtonFeedbackTimeout);
+  shareLinkButton.classList.add("share-button--success");
+  shareLinkButton.textContent = t("shareButtonSuccess");
+  shareButtonFeedbackTimeout = setTimeout(() => {
+    shareLinkButton.classList.remove("share-button--success");
+    shareLinkButton.textContent = t("shareButton");
+  }, 1400);
+}
+
+shareLinkButton.addEventListener("click", () => {
+  const url = buildShareUrl();
+  navigator.clipboard.writeText(url).then(showShareFeedback, () => {
+    window.prompt(t("shareButton"), url);
+  });
 });
 
 // ---------------------------------------------------------------------

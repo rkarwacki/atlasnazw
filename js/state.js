@@ -1,4 +1,4 @@
-import { initialHash, parsePlaceTypeFilter, validMarkerSizeMode, validMarkerRadius, writeUrlState } from "./url-state.js";
+import { initialHash, parsePlaceTypeFilter, validMarkerSizeMode, validMarkerRadius, writeUrlState, buildShareUrl as buildShareUrlRaw } from "./url-state.js";
 import { getLang } from "./i18n.js";
 
 // ---------------------------------------------------------------------
@@ -66,9 +66,14 @@ export function loadSubparts() {
   return subpartsLoadPromise;
 }
 
-/** Mirrors the current state into the URL. See writeUrlState for details. */
+/** Mirrors the current language into the address bar. See writeUrlState. */
 export function syncUrl() {
-  writeUrlState({
+  writeUrlState({ lang: getLang() });
+}
+
+/** Builds a full shareable URL encoding the current state. See buildShareUrl. */
+export function buildShareUrl() {
+  return buildShareUrlRaw({
     lang: getLang(),
     placeTypeFilter: state.placeTypeFilter,
     markerSizeMode: state.markerSizeMode,

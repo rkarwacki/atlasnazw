@@ -54,6 +54,11 @@ const TRANSLATIONS = {
     markerSizeHeading: "Rozmiar znaczników",
     dynamicSizeLabel: "Dynamiczny rozmiar (zależny od przybliżenia)",
     fixedSizeLabel: "Stały rozmiar",
+    shareHeading: "Udostępnij",
+    shareButton: "Skopiuj link ze stanem",
+    shareButtonSuccess: "✓ Skopiowano!",
+    shareHint:
+      "Adres w pasku przeglądarki jest krótki — ten przycisk kopiuje pełny link z Twoimi regułami i ustawieniami.",
     dataHeading: "Dane miejscowości",
     placeCountText: "Liczba wczytanych miejscowości: {count} — {source}.",
     sourcePoland:
@@ -118,6 +123,11 @@ const TRANSLATIONS = {
     markerSizeHeading: "Marker size",
     dynamicSizeLabel: "Dynamic size (based on zoom)",
     fixedSizeLabel: "Fixed size",
+    shareHeading: "Share",
+    shareButton: "Copy link with current state",
+    shareButtonSuccess: "✓ Copied!",
+    shareHint:
+      "The address bar link is short — this button copies a full link with your rules and settings.",
     dataHeading: "Place data",
     placeCountText: "Loaded places: {count} — {source}.",
     sourcePoland:
