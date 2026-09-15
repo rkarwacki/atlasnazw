@@ -12,7 +12,7 @@
   const initialQuery = new URLSearchParams(window.location.search);
   const initialHash = new URLSearchParams(window.location.hash.slice(1));
 
-  /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains", color: string}[]} */
+  /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains"|"exact", color: string}[]} */
   let rules = [];
   let nextRuleId = 1;
 
@@ -51,6 +51,7 @@
       optionSuffix: "Końcówka",
       optionPrefix: "Początek",
       optionContains: "Zawiera",
+      optionExact: "Dokładnie",
       colorTitle: "Kolor podświetlenia",
       colorLabel: "Kolor",
       addButton: "Dodaj",
@@ -107,6 +108,7 @@
       optionSuffix: "Ending",
       optionPrefix: "Beginning",
       optionContains: "Contains",
+      optionExact: "Exact",
       colorTitle: "Highlight color",
       colorLabel: "Color",
       addButton: "Add",
@@ -200,7 +202,7 @@
   // URL query params (import/export settings via the URL)
   // ---------------------------------------------------------------------
 
-  const VALID_MATCH_TYPES = new Set(["suffix", "prefix", "contains"]);
+  const VALID_MATCH_TYPES = new Set(["suffix", "prefix", "contains", "exact"]);
 
   function validLang(v) {
     return v === "pl" || v === "en" ? v : null;
@@ -455,6 +457,7 @@
       if (!pattern) continue;
       if (rule.matchType === "prefix" && lower.startsWith(pattern)) return rule;
       if (rule.matchType === "contains" && lower.includes(pattern)) return rule;
+      if (rule.matchType === "exact" && lower === pattern) return rule;
       if ((rule.matchType || "suffix") === "suffix" && lower.endsWith(pattern)) return rule;
     }
     return null;
@@ -468,6 +471,7 @@
     const escaped = escapeHtml(rule.pattern);
     if (rule.matchType === "prefix") return `${escaped}…`;
     if (rule.matchType === "contains") return `…${escaped}…`;
+    if (rule.matchType === "exact") return escaped;
     return `…${escaped}`;
   }
 
@@ -707,8 +711,8 @@
 
   ruleForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const pattern = ruleSuffixInput.value.trim();
-    if (!pattern) return;
+    const pattern = ruleSuffixInput.value;
+    if (!pattern.trim()) return;
 
     const matchType = ruleMatchTypeSelect.value;
     if (isDuplicateRule(pattern, matchType)) {
