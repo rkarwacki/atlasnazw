@@ -154,6 +154,11 @@
       markerSizeHeading: "Rozmiar znaczników",
       dynamicSizeLabel: "Dynamiczny rozmiar (zależny od przybliżenia)",
       fixedSizeLabel: "Stały rozmiar",
+      shareHeading: "Udostępnij",
+      shareButton: "Skopiuj link ze stanem",
+      shareButtonSuccess: "✓ Skopiowano!",
+      shareHint:
+        "Adres w pasku przeglądarki jest krótki — ten przycisk kopiuje pełny link z Twoimi regułami i ustawieniami.",
       dataHeading: "Dane miejscowości",
       placeCountText: "Liczba wczytanych miejscowości: {count} — {source}.",
       sourcePoland:
@@ -218,6 +223,11 @@
       markerSizeHeading: "Marker size",
       dynamicSizeLabel: "Dynamic size (based on zoom)",
       fixedSizeLabel: "Fixed size",
+      shareHeading: "Share",
+      shareButton: "Copy link with current state",
+      shareButtonSuccess: "✓ Copied!",
+      shareHint:
+        "The address bar link is short — this button copies a full link with your rules and settings.",
       dataHeading: "Place data",
       placeCountText: "Loaded places: {count} — {source}.",
       sourcePoland:
@@ -347,15 +357,30 @@
   }
 
   /**
-   * Mirrors the current settings into the URL (via replaceState, so it
-   * never adds history entries) so the page can be bookmarked or shared to
-   * reproduce the same view. Language stays a query param; everything else
-   * moves into the hash so the query string doesn't balloon with rules.
+   * Keeps the address bar down to just the language so links stay short
+   * and non-scary to share by copy/paste. Uses replaceState so it never
+   * adds history entries. The full state (rules, filters, etc.) is only
+   * ever put in a URL on demand, via buildShareUrl().
    */
   function syncUrl() {
     const queryParams = new URLSearchParams();
     queryParams.set("lang", currentLang);
     const newSearch = "?" + queryParams.toString();
+
+    if (newSearch !== window.location.search || window.location.hash) {
+      history.replaceState(null, "", newSearch);
+    }
+  }
+
+  /**
+   * Builds a full URL encoding the current settings (rules, filters, marker
+   * size, overlays) so it can be copied and shared to reproduce this exact
+   * view. Language stays a query param; everything else lives in the hash
+   * so the query string doesn't balloon with rules.
+   */
+  function buildShareUrl() {
+    const queryParams = new URLSearchParams();
+    queryParams.set("lang", currentLang);
 
     const hashParams = new URLSearchParams();
     hashParams.set("types", Array.from(placeTypeFilter).join(","));
@@ -372,11 +397,8 @@
     if (rules.length) {
       hashParams.set("rules", encodeRules(rules));
     }
-    const newHash = "#" + hashParams.toString();
 
-    if (newSearch !== window.location.search || newHash !== window.location.hash) {
-      history.replaceState(null, "", newSearch + newHash);
-    }
+    return `${window.location.origin}${window.location.pathname}?${queryParams.toString()}#${hashParams.toString()}`;
   }
 
   // ---------------------------------------------------------------------
@@ -575,6 +597,7 @@
   const panelHandleLabelEl = document.getElementById("panel-handle-label");
   const langSwitchEl = document.getElementById("lang-switch");
   const placeCountLineEl = document.getElementById("place-count-line");
+  const shareLinkButton = document.getElementById("share-link-button");
 
   // Colorblind-friendly-ish categorical palette, minus black (vanishes
   // against this dark sidebar) and minus yellow/green (blend into the
@@ -1022,6 +1045,25 @@
     const btn = e.target.closest(".lang-switch__btn");
     if (!btn) return;
     setLanguage(btn.dataset.lang);
+  });
+
+  let shareButtonFeedbackTimeout = null;
+
+  function showShareFeedback() {
+    clearTimeout(shareButtonFeedbackTimeout);
+    shareLinkButton.classList.add("share-button--success");
+    shareLinkButton.textContent = t("shareButtonSuccess");
+    shareButtonFeedbackTimeout = setTimeout(() => {
+      shareLinkButton.classList.remove("share-button--success");
+      shareLinkButton.textContent = t("shareButton");
+    }, 1400);
+  }
+
+  shareLinkButton.addEventListener("click", () => {
+    const url = buildShareUrl();
+    navigator.clipboard.writeText(url).then(showShareFeedback, () => {
+      window.prompt(t("shareButton"), url);
+    });
   });
 
   // ---------------------------------------------------------------------
