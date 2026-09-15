@@ -357,22 +357,49 @@
   };
   legendControl.addTo(map);
 
-  // Let the legend be dragged around the map on desktop, so it can be
-  // repositioned (and, via the CSS `resize` handle, enlarged) for
-  // screenshots. Mobile has no mouse, so this is skipped there.
+  // Let the legend be dragged and enlarged on desktop, so it can be
+  // repositioned and made more legible for screenshots. Mobile has no
+  // mouse, so this is skipped there. A custom resize handle is used
+  // instead of the native CSS `resize` property, which doesn't play well
+  // with the flex-positioned Leaflet control corner it lives in.
   const legendEl = document.getElementById("legend");
-  const RESIZE_HANDLE_HOTZONE = 16;
+  const LEGEND_RESIZE_HANDLE_HOTZONE = 16;
+  const LEGEND_MIN_WIDTH = 100;
+  const LEGEND_MIN_HEIGHT = 32;
+  let legendManuallySized = false;
+
   legendEl.addEventListener("mousedown", (e) => {
     if (!window.matchMedia("(min-width: 761px)").matches) return;
 
     const rect = legendEl.getBoundingClientRect();
     const nearResizeHandle =
-      rect.right - e.clientX < RESIZE_HANDLE_HOTZONE && rect.bottom - e.clientY < RESIZE_HANDLE_HOTZONE;
-    if (nearResizeHandle) return;
+      rect.right - e.clientX < LEGEND_RESIZE_HANDLE_HOTZONE &&
+      rect.bottom - e.clientY < LEGEND_RESIZE_HANDLE_HOTZONE;
 
     e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
+
+    if (nearResizeHandle) {
+      const startWidth = rect.width;
+      const startHeight = rect.height;
+      legendEl.classList.add("legend--dragging");
+
+      function onResizeMove(moveEvent) {
+        legendManuallySized = true;
+        legendEl.style.width = `${Math.max(LEGEND_MIN_WIDTH, startWidth + (moveEvent.clientX - startX))}px`;
+        legendEl.style.height = `${Math.max(LEGEND_MIN_HEIGHT, startHeight + (moveEvent.clientY - startY))}px`;
+      }
+      function onResizeUp() {
+        document.removeEventListener("mousemove", onResizeMove);
+        document.removeEventListener("mouseup", onResizeUp);
+        legendEl.classList.remove("legend--dragging");
+      }
+      document.addEventListener("mousemove", onResizeMove);
+      document.addEventListener("mouseup", onResizeUp);
+      return;
+    }
+
     const startLeft = rect.left;
     const startTop = rect.top;
 
@@ -653,9 +680,20 @@
     }
   }
 
+  let legendRowCount = null;
+
   function renderLegend(counts) {
     const legend = document.getElementById("legend");
     if (!legend) return;
+
+    const rowCount = rules.length === 0 ? 1 : rules.length;
+    if (legendManuallySized && rowCount !== legendRowCount) {
+      // A rule was added or removed: let the box grow (or shrink) back to
+      // fit its content instead of clipping/scrolling at a stale manual
+      // height. The user-picked width is kept.
+      legend.style.height = "";
+    }
+    legendRowCount = rowCount;
 
     if (rules.length === 0) {
       legend.innerHTML = `<div class="legend__row">${t("noActiveRules")}</div>`;

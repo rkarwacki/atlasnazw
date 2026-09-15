@@ -618,6 +618,7 @@ html, body {
 }
 
 .legend {
+  position: relative;
   background: rgba(20, 33, 31, 0.92);
   color: var(--paper);
   border: 1px solid var(--line);
@@ -626,15 +627,39 @@ html, body {
   font-size: 12.5px;
   line-height: 1.7;
   min-width: 140px;
+  box-sizing: border-box;
 }
 
 /* Enlarging/dragging the legend is a desktop-only affordance (for taking
-   screenshots) — mobile has no mouse for the resize handle or drag. */
+   screenshots) — mobile has no mouse for the resize handle or drag. A
+   custom handle is used instead of the native CSS `resize` property, which
+   doesn't behave reliably inside Leaflet's flex-positioned control corner. */
 @media (min-width: 761px) {
   .legend {
-    resize: both;
     overflow: auto;
     cursor: grab;
+  }
+  .legend::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 9px;
+    height: 9px;
+    cursor: nwse-resize;
+    background: linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 40%,
+      var(--paper) 40%,
+      var(--paper) 55%,
+      transparent 55%,
+      transparent 70%,
+      var(--paper) 70%,
+      var(--paper) 85%,
+      transparent 85%
+    );
+    opacity: 0.6;
   }
   .legend--dragging {
     cursor: grabbing;
