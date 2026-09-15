@@ -8,8 +8,8 @@ Mała statyczna aplikacja webowa: mapa Polski w Leaflet (kafelki OpenStreetMap),
 na której definiujesz jedną lub więcej "reguł" — końcówkę nazwy plus kolor —
 i każda miejscowość, której nazwa pasuje, zostaje podświetlona tym kolorem.
 
-Bez backendu, bez kroku budowania. To `index.html`, `style.css`, `app.js`,
-plus pliki z danymi: `places-poland.js` (dołączony zbiór danych, 63 340
+Bez backendu, bez kroku budowania. To `index.html`, `style.css`, skrypty
+aplikacji w `js/` (natywne moduły ES, bez bundlera), plus pliki z danymi: `places-poland.js` (dołączony zbiór danych, 63 340
 miejscowości), `places-poland-parts.js` (opcjonalne +53 094 nazwanych
 "części" miejscowości, wczytywane leniwie tylko po włączeniu — patrz niżej)
 oraz `partitions-poland.js` (opcjonalna nakładka z historycznymi granicami
@@ -127,7 +127,7 @@ zamiast domyślnie rozdymać `places-poland.js` dla wszystkich:
   aplikację typów.
 - To samo źródło, licencja i data ważności co `places-poland.js` (PRNG, CC BY
   4.0, 2026-01-01).
-- `app.js` wstrzykuje tag `<script src="places-poland-parts.js">` na
+- `js/state.js` wstrzykuje tag `<script src="places-poland-parts.js">` na
   żądanie (patrz `loadSubparts()`) przy pierwszym włączeniu checkboxa, albo
   gdy udostępniony link ma `parts=1` w hashu URL; w innym wypadku plik nigdy
   nie jest pobierany.
