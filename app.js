@@ -40,7 +40,7 @@
       metaDescription:
         "Interaktywna mapa Polski podświetlająca miejscowości wg końcówki nazwy (np. -ów, -owo, -ice) — 44 tys. miast i wsi, reguły dopasowania, nakładka granic zaborów.",
       appName: "Atlas Nazw Miejscowości",
-      subtitle: "Podświetlaj polskie miejscowości wg końcówki nazwy",
+      subtitle: "Podświetlaj miejscowości wg nazwy",
       loadingLabel: "Ładowanie danych…",
       panelToggleTitle: "Zwiń/rozwiń panel",
       panelHandleShow: "Pokaż menu",
@@ -52,7 +52,10 @@
       optionPrefix: "Początek",
       optionContains: "Zawiera",
       colorTitle: "Kolor podświetlenia",
+      colorLabel: "Kolor",
       addButton: "Dodaj",
+      addRuleButton: "Dodaj regułę",
+      addRuleSuccess: "✓ Dodano!",
       addRuleHint:
         "Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.",
       activeRulesHeading: "Aktywne reguły",
@@ -90,7 +93,7 @@
       metaDescription:
         "Interactive map of Poland highlighting place names by their ending (e.g. -ów, -owo, -ice) — 44k cities and villages, match rules, historical partition borders overlay.",
       appName: "Town Name Atlas",
-      subtitle: "Highlight Polish place names by their ending",
+      subtitle: "Highlight place names by their ending",
       loadingLabel: "Loading data…",
       panelToggleTitle: "Collapse/expand panel",
       panelHandleShow: "Show filters",
@@ -102,7 +105,10 @@
       optionPrefix: "Beginning",
       optionContains: "Contains",
       colorTitle: "Highlight color",
+      colorLabel: "Color",
       addButton: "Add",
+      addRuleButton: "Add rule",
+      addRuleSuccess: "✓ Added!",
       addRuleHint:
         "Case doesn't matter. Rules are checked top to bottom — the first matching name wins.",
       activeRulesHeading: "Active rules",
@@ -351,6 +357,9 @@
   const ruleSuffixInput = document.getElementById("rule-suffix");
   const ruleMatchTypeSelect = document.getElementById("rule-match-type");
   const ruleColorInput = document.getElementById("rule-color");
+  const ruleAddButton = document.getElementById("rule-add-button");
+  const ruleHintIcon = document.getElementById("rule-hint-icon");
+  const ruleHintTooltip = document.getElementById("rule-hint-tooltip");
   const ruleListEl = document.getElementById("rule-list");
   const ruleEmptyEl = document.getElementById("rule-empty");
   const typeFilterEl = document.getElementById("type-filter");
@@ -622,6 +631,29 @@
   // Event handlers: rules
   // ---------------------------------------------------------------------
 
+  // Native `title` tooltips don't respond to a tap on touch devices, so the
+  // hint icon also toggles a visible tooltip on click for mobile users.
+  ruleHintIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    ruleHintTooltip.classList.toggle("visible");
+  });
+
+  document.addEventListener("click", () => {
+    ruleHintTooltip.classList.remove("visible");
+  });
+
+  let ruleAddFeedbackTimeout = null;
+
+  function showRuleAddedFeedback() {
+    clearTimeout(ruleAddFeedbackTimeout);
+    ruleAddButton.classList.add("rule-form__add--success");
+    ruleAddButton.textContent = t("addRuleSuccess");
+    ruleAddFeedbackTimeout = setTimeout(() => {
+      ruleAddButton.classList.remove("rule-form__add--success");
+      ruleAddButton.textContent = t("addRuleButton");
+    }, 1400);
+  }
+
   ruleForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const pattern = ruleSuffixInput.value.trim();
@@ -638,6 +670,7 @@
     ruleColorInput.value = nextSuggestedColor();
 
     render();
+    showRuleAddedFeedback();
   });
 
   typeFilterEl.addEventListener("change", (e) => {
@@ -748,6 +781,10 @@
   applyStaticTranslations();
   updateLangSwitchUI();
   render();
+
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    setPanelCollapsed(true);
+  }
 
   const loadingOverlay = document.getElementById("loading-overlay");
   if (loadingOverlay) loadingOverlay.classList.add("is-hidden");

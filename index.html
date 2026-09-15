@@ -48,7 +48,7 @@
     <header class="panel__header">
       <div class="panel__header-text">
         <h1 data-i18n="appName">Atlas Nazw Miejscowości</h1>
-        <p class="panel__sub" data-i18n="subtitle">Podświetlaj polskie miejscowości wg końcówki nazwy</p>
+        <p class="panel__sub" data-i18n="subtitle">Podświetlaj miejscowości wg nazwy</p>
       </div>
       <div class="panel__header-actions">
         <div class="lang-switch" id="lang-switch" role="group" aria-label="Language / Język">
@@ -73,32 +73,54 @@
 
     <div class="panel__body" id="panel-body">
       <section class="panel__section">
-        <h2 data-i18n="addRuleHeading">Dodaj regułę</h2>
+        <h2 class="panel__section-heading">
+          <span data-i18n="addRuleHeading">Dodaj regułę</span>
+          <span class="info-icon-wrap">
+            <button
+              type="button"
+              id="rule-hint-icon"
+              class="info-icon"
+              data-i18n-aria-label="addRuleHint"
+              aria-label="Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa."
+              aria-describedby="rule-hint-tooltip"
+            >i</button>
+            <span
+              class="info-tooltip"
+              id="rule-hint-tooltip"
+              role="tooltip"
+              data-i18n="addRuleHint"
+            >Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.</span>
+          </span>
+        </h2>
         <form id="rule-form" class="rule-form">
-          <input
-            id="rule-suffix"
-            type="text"
-            data-i18n-placeholder="suffixPlaceholder"
-            placeholder="np. ów lub owo"
-            autocomplete="off"
-            required
-          />
-          <select id="rule-match-type" class="rule-match-type" title="Rodzaj dopasowania" data-i18n-title="matchTypeTitle">
-            <option value="suffix" data-i18n="optionSuffix">Końcówka</option>
-            <option value="prefix" data-i18n="optionPrefix">Początek</option>
-            <option value="contains" data-i18n="optionContains">Zawiera</option>
-          </select>
-          <input id="rule-color" type="color" value="#e69f00" data-i18n-title="colorTitle" title="Kolor podświetlenia" />
-          <button
-            type="submit"
-            class="rule-form__add"
-            data-i18n-title="addButton"
-            data-i18n-aria-label="addButton"
-            title="Dodaj"
-            aria-label="Dodaj"
-          >+</button>
+          <div class="rule-form__row">
+            <select id="rule-match-type" class="rule-match-type" title="Rodzaj dopasowania" data-i18n-title="matchTypeTitle">
+              <option value="suffix" data-i18n="optionSuffix">Końcówka</option>
+              <option value="prefix" data-i18n="optionPrefix">Początek</option>
+              <option value="contains" data-i18n="optionContains">Zawiera</option>
+            </select>
+            <input
+              id="rule-suffix"
+              type="text"
+              data-i18n-placeholder="suffixPlaceholder"
+              placeholder="np. ów lub owo"
+              autocomplete="off"
+              required
+            />
+          </div>
+          <div class="rule-form__row">
+            <label class="rule-form__color">
+              <span class="rule-form__color-label" data-i18n="colorLabel">Kolor</span>
+              <input id="rule-color" type="color" value="#e69f00" data-i18n-title="colorTitle" title="Kolor podświetlenia" />
+            </label>
+            <button
+              type="submit"
+              id="rule-add-button"
+              class="rule-form__add"
+              data-i18n="addRuleButton"
+            >Dodaj regułę</button>
+          </div>
         </form>
-        <p class="hint" data-i18n="addRuleHint">Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.</p>
       </section>
 
       <section class="panel__section">
@@ -180,6 +202,9 @@
       aria-expanded="true"
       aria-controls="panel-body"
     >
+      <svg class="panel-handle__icon panel-handle__icon--lead" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M3 6L8 11L13 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
       <span class="panel-handle__label" id="panel-handle-label" data-i18n="panelHandleHide">Pokaż mniej</span>
       <svg class="panel-handle__icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M3 6L8 11L13 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />

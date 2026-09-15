@@ -6,6 +6,7 @@
   --line: #3d4f47;
   --accent: #b8451e;
   --accent-soft: #e7c9b8;
+  --success: #3f8f5f;
   --text-on-ink: #eef1e9;
   --text-muted: #9fb0a6;
   font-family: "IBM Plex Sans", system-ui, sans-serif;
@@ -148,8 +149,8 @@ html, body {
 }
 
 .panel__section {
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 14px;
   border-top: 1px solid var(--line);
 }
 
@@ -159,6 +160,69 @@ html, body {
   text-transform: none;
   color: var(--text-muted);
   margin: 0 0 12px;
+}
+
+.panel__section-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-style: italic;
+  line-height: 1;
+  padding: 0;
+  cursor: help;
+}
+
+.info-icon:hover {
+  border-color: var(--accent);
+  color: var(--accent-soft);
+}
+
+.info-icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: min(260px, 70vw);
+  background: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-on-ink);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.info-icon-wrap:hover .info-tooltip,
+.info-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .hint {
@@ -241,7 +305,14 @@ html, body {
 
 .rule-form {
   display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.rule-form__row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
 }
 
 .rule-form input[type="text"] {
@@ -262,15 +333,27 @@ html, body {
 
 .rule-form select.rule-match-type {
   flex-shrink: 0;
-  max-width: 84px;
+  max-width: 112px;
   background: var(--ink-soft);
   border: 1px solid var(--line);
   border-radius: 4px;
   color: var(--text-on-ink);
-  padding: 9px 4px;
+  padding: 9px 6px;
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
   cursor: pointer;
+}
+
+.rule-form__color {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rule-form__color-label {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .rule-form input[type="color"] {
@@ -289,14 +372,17 @@ html, body {
   color: var(--paper);
   border: none;
   border-radius: 4px;
-  width: 38px;
+  flex: 1;
   height: 38px;
-  flex-shrink: 0;
-  padding: 0;
+  padding: 0 12px;
   font-weight: 600;
-  font-size: 20px;
-  line-height: 1;
+  font-size: 13px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.rule-form__add--success {
+  background: var(--success);
 }
 
 .rule-form__add:hover {
@@ -618,6 +704,10 @@ html, body {
   }
   .panel:not(.collapsed) .panel-handle__icon {
     transform: rotate(180deg);
+  }
+  .panel.collapsed .panel-handle__label {
+    color: var(--accent-soft);
+    font-weight: 600;
   }
   .map-wrap {
     flex: 1;
