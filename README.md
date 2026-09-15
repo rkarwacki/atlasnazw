@@ -7,7 +7,7 @@ define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
 No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
-files: `places-poland.js` (the bundled dataset, 44,664 places) and
+files: `places-poland.js` (the bundled dataset, 49,951 places) and
 `partitions-poland.js` (an optional overlay of the historical Partitions of
 Poland borders). `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, and
 `og-image.png` are pre-built static assets; `robots.txt` and `sitemap.xml`
@@ -47,13 +47,13 @@ python3 -m http.server 8000
    was the main thing making the map sluggish.
 
 The UI is in Polish or English (toggle top-right). `places-poland.js` records
-carry a `type` of `"city"` or `"village"`; the type filter has no effect on
-records that don't carry that field.
+carry a `type` of `"city"`, `"village"`, or `"osada"`; the type filter has no
+effect on records that don't carry that field.
 
 ## About the data
 
-The app ships with the **real list by default**: `places-poland.js`, 44,664
-Polish cities and villages with coordinates (WGS 84).
+The app ships with the **real list by default**: `places-poland.js`, 49,951
+Polish cities, villages, and osady (settlements) with coordinates (WGS 84).
 
 ### Data source & license
 
@@ -61,14 +61,27 @@ Polish cities and villages with coordinates (WGS 84).
   release `v0.4.0` — a snapshot of PRNG (Państwowy Rejestr Nazw
   Geograficznych, Poland's National Register of Geographical Names) valid as
   of 2026-01-01, maintained by GUGiK (Poland's Head Office of Geodesy and
-  Cartography).
-- License: **CC BY 4.0**. Attribution: data derived from the PRNG register
-  via mbroton/polish-geonames (CC BY 4.0). Keep this notice if you redistribute
+  Cartography). This upstream dataset only keeps records whose official PRNG
+  type (`rodzajObiektu`) is `miasto` (city) or `wieś` (village) — 44,664
+  records.
+- The **5,287 `"osada"` records** (a distinct PRNG locality type — a small
+  settlement, generally without formal village status) are missing from that
+  upstream dataset, since its parser explicitly filters them out. They were
+  added here by downloading the same underlying PRNG export directly —
+  [`PRNG_MIEJSCOWOSCI_GML`](https://dane.gov.pl/pl/dataset/780,panstwowy-rejestr-nazw-geograficznych-prng)
+  from dane.gov.pl, also valid as of 2026-01-01 — and keeping only records
+  where `rodzajObiektu == "osada"`. Related-but-distinct PRNG types (e.g.
+  `osada leśna`, `przysiółek`, `kolonia`, `część wsi`) are **not** included;
+  only the exact `"osada"` type is.
+- License: **CC BY 4.0** for both. Attribution: data derived from the PRNG
+  register via mbroton/polish-geonames and, for the `osada` records, directly
+  from PRNG (CC BY 4.0). Keep this notice if you redistribute
   `places-poland.js` or a derivative of it.
-- `places-poland.js` trims the upstream records down to the `{name, lat, lon,
-  type}` shape this app uses (`type` is `"city"` or `"village"`, used by the
-  "Typ miejscowości" filter); the upstream dataset also carries `province`,
-  `district`, and `commune` fields if you want to re-fetch and use those.
+- `places-poland.js` trims the source records down to the `{name, lat, lon,
+  type}` shape this app uses (`type` is `"city"`, `"village"`, or `"osada"`,
+  used by the "Typ miejscowości" filter); the upstream datasets also carry
+  `province`, `district`, and `commune` fields if you want to re-fetch and use
+  those.
 
 ### Partition borders overlay
 

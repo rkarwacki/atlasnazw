@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const ALL_PLACE_TYPES = ["city", "village", "osada"];
+
   // ---------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------
@@ -16,11 +18,11 @@
   let rules = [];
   let nextRuleId = 1;
 
-  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"}[]} */
+  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"}[]} */
   const places = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
-  /** @type {"all" | "city" | "village"} */
-  let placeTypeFilter = validPlaceType(initialHash.get("type")) || "all";
+  /** @type {Set<"city" | "village" | "osada">} */
+  let placeTypeFilter = parsePlaceTypeFilter(initialHash.get("types"));
 
   /** @type {"dynamic" | "fixed"} */
   let markerSizeMode = validMarkerSizeMode(initialHash.get("markerSize")) || "dynamic";
@@ -63,9 +65,9 @@
       activeRulesHeading: "Aktywne reguły",
       noRulesHint: "Brak reguł — dodaj jedną powyżej, aby zacząć podświetlanie.",
       placeTypeHeading: "Typ miejscowości",
-      typeAll: "Wszystkie",
-      typeCity: "Tylko miasta",
-      typeVillage: "Tylko wsie",
+      typeCity: "Miasto",
+      typeVillage: "Wieś",
+      typeOsada: "Osada",
       advancedSummary: "Zaawansowane",
       overlaysHeading: "Nakładki mapy",
       partitionsLabel: "Pokaż granice zaborów (1815–1918)",
@@ -88,7 +90,7 @@
       aboutHeading: "O projekcie",
       attributionHeading: "Źródła danych",
       attributionPlaces:
-        "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG) via mbroton/polish-geonames, licencja CC BY 4.0.",
+        "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG), licencja CC BY 4.0 — miasta i wsie via mbroton/polish-geonames, osady wyodrębnione bezpośrednio z eksportu PRNG.",
       attributionPartitions:
         "Granice zaborów: OpenHistoricalMap (CC0) + georgique/world-geojson (zarys Polski do przycięcia, GPL-3.0) — pochodna GPL-3.0.",
     },
@@ -120,9 +122,9 @@
       activeRulesHeading: "Active rules",
       noRulesHint: "No rules yet — add one above to start highlighting.",
       placeTypeHeading: "Place type",
-      typeAll: "All",
-      typeCity: "Cities only",
-      typeVillage: "Villages only",
+      typeCity: "City",
+      typeVillage: "Village",
+      typeOsada: "Osada",
       advancedSummary: "Advanced",
       overlaysHeading: "Map overlays",
       partitionsLabel: "Show partition borders (1815–1918)",
@@ -145,7 +147,7 @@
       aboutHeading: "About",
       attributionHeading: "Data sources",
       attributionPlaces:
-        "Places: National Register of Geographic Names (PRNG) via mbroton/polish-geonames, CC BY 4.0 license.",
+        "Places: National Register of Geographic Names (PRNG), CC BY 4.0 license — cities and villages via mbroton/polish-geonames, osady extracted directly from the PRNG export.",
       attributionPartitions:
         "Partition borders: OpenHistoricalMap (CC0) + georgique/world-geojson (Poland outline used for clipping, GPL-3.0) — GPL-3.0 derivative.",
     },
@@ -208,8 +210,15 @@
     return v === "pl" || v === "en" ? v : null;
   }
 
-  function validPlaceType(v) {
-    return v === "all" || v === "city" || v === "village" ? v : null;
+  /**
+   * Parses the "types" hash param (a comma-separated list of place types)
+   * into a Set. Falls back to all types selected if absent or unusable, so
+   * the type-filter checkboxes default to "everything checked".
+   */
+  function parsePlaceTypeFilter(v) {
+    if (!v) return new Set(ALL_PLACE_TYPES);
+    const parsed = v.split(",").filter((part) => ALL_PLACE_TYPES.includes(part));
+    return new Set(parsed.length ? parsed : ALL_PLACE_TYPES);
   }
 
   function validMarkerSizeMode(v) {
@@ -265,7 +274,7 @@
     const newSearch = "?" + queryParams.toString();
 
     const hashParams = new URLSearchParams();
-    hashParams.set("type", placeTypeFilter);
+    hashParams.set("types", Array.from(placeTypeFilter).join(","));
     hashParams.set("markerSize", markerSizeMode);
     if (markerSizeMode === "fixed") {
       hashParams.set("markerRadius", String(fixedMarkerRadius));
@@ -571,11 +580,10 @@
   }
 
   function passesTypeFilter(place) {
-    if (placeTypeFilter === "all") return true;
     // Places without type info (sample/custom data) are never hidden by the
     // filter -- we simply don't know what they are.
     if (!place.type) return true;
-    return place.type === placeTypeFilter;
+    return placeTypeFilter.has(place.type);
   }
 
   /**
@@ -837,7 +845,11 @@
 
   typeFilterEl.addEventListener("change", (e) => {
     if (e.target.name !== "place-type") return;
-    placeTypeFilter = e.target.value;
+    if (e.target.checked) {
+      placeTypeFilter.add(e.target.value);
+    } else {
+      placeTypeFilter.delete(e.target.value);
+    }
     render();
   });
 
@@ -901,10 +913,9 @@
   }
 
   function syncTypeFilterUI() {
-    const radio = typeFilterEl.querySelector(
-      `input[name="place-type"][value="${placeTypeFilter}"]`
-    );
-    if (radio) radio.checked = true;
+    typeFilterEl.querySelectorAll('input[name="place-type"]').forEach((checkbox) => {
+      checkbox.checked = placeTypeFilter.has(checkbox.value);
+    });
   }
 
   function syncMarkerSizeUI() {
