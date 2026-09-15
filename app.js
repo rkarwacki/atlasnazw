@@ -366,7 +366,35 @@
   const LEGEND_RESIZE_HANDLE_HOTZONE = 16;
   const LEGEND_MIN_WIDTH = 100;
   const LEGEND_MIN_HEIGHT = 32;
+  // Must match .legend's font-size/line-height in style.css: the scale
+  // factor is "how much taller is each row than it is by default".
+  const LEGEND_BASE_FONT_SIZE = 12.5;
+  const LEGEND_LINE_HEIGHT = 1.7;
+  const LEGEND_MAX_FONT_SCALE = 4;
   let legendManuallySized = false;
+  let legendRowCount = 1;
+
+  // Once the box has been manually resized, text and dots (sized in `em`,
+  // see .legend__dot) scale up to fill any extra vertical space beyond
+  // what the current rows need at the default size — never below it, so
+  // a box too small for its content just scrolls instead of shrinking text.
+  function updateLegendFontScale() {
+    if (!legendManuallySized) {
+      legendEl.style.fontSize = "";
+      return;
+    }
+    const cs = getComputedStyle(legendEl);
+    const verticalChrome =
+      parseFloat(cs.paddingTop) +
+      parseFloat(cs.paddingBottom) +
+      parseFloat(cs.borderTopWidth) +
+      parseFloat(cs.borderBottomWidth);
+    const availableHeight = legendEl.getBoundingClientRect().height - verticalChrome;
+    const heightPerRow = availableHeight / legendRowCount;
+    const naturalHeightPerRow = LEGEND_BASE_FONT_SIZE * LEGEND_LINE_HEIGHT;
+    const scale = Math.min(LEGEND_MAX_FONT_SCALE, Math.max(1, heightPerRow / naturalHeightPerRow));
+    legendEl.style.fontSize = `${LEGEND_BASE_FONT_SIZE * scale}px`;
+  }
 
   legendEl.addEventListener("mousedown", (e) => {
     if (!window.matchMedia("(min-width: 761px)").matches) return;
@@ -389,6 +417,7 @@
         legendManuallySized = true;
         legendEl.style.width = `${Math.max(LEGEND_MIN_WIDTH, startWidth + (moveEvent.clientX - startX))}px`;
         legendEl.style.height = `${Math.max(LEGEND_MIN_HEIGHT, startHeight + (moveEvent.clientY - startY))}px`;
+        updateLegendFontScale();
       }
       function onResizeUp() {
         document.removeEventListener("mousemove", onResizeMove);
@@ -680,37 +709,32 @@
     }
   }
 
-  let legendRowCount = null;
-
   function renderLegend(counts) {
     const legend = document.getElementById("legend");
     if (!legend) return;
 
-    const rowCount = rules.length === 0 ? 1 : rules.length;
-    if (legendManuallySized && rowCount !== legendRowCount) {
-      // A rule was added or removed: let the box grow (or shrink) back to
-      // fit its content instead of clipping/scrolling at a stale manual
-      // height. The user-picked width is kept.
-      legend.style.height = "";
-    }
-    legendRowCount = rowCount;
+    legendRowCount = rules.length === 0 ? 1 : rules.length;
 
     if (rules.length === 0) {
       legend.innerHTML = `<div class="legend__row">${t("noActiveRules")}</div>`;
-      return;
+    } else {
+      legend.innerHTML = rules
+        .map((rule) => {
+          const count = counts.get(rule.id) || 0;
+          return `
+            <div class="legend__row">
+              <span class="legend__dot" data-rule-id="${rule.id}" style="background:${rule.color}"></span>
+              <span>${formatPatternDisplay(rule)} (${count})</span>
+            </div>
+          `;
+        })
+        .join("");
     }
 
-    legend.innerHTML = rules
-      .map((rule) => {
-        const count = counts.get(rule.id) || 0;
-        return `
-          <div class="legend__row">
-            <span class="legend__dot" data-rule-id="${rule.id}" style="background:${rule.color}"></span>
-            <span>${formatPatternDisplay(rule)} (${count})</span>
-          </div>
-        `;
-      })
-      .join("");
+    // A rule may have been added/removed since the box was manually
+    // resized: re-fit the text/dot scale to the (possibly changed) row
+    // count within the same box size the user chose.
+    updateLegendFontScale();
   }
 
   /**

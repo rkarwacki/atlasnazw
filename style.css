@@ -670,12 +670,14 @@ html, body {
 .legend__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.64em;
 }
 
 .legend__dot {
-  width: 10px;
-  height: 10px;
+  /* em, not px, so it scales with .legend's font-size (see
+     updateLegendFontScale in app.js) instead of staying fixed. */
+  width: 0.8em;
+  height: 0.8em;
   border-radius: 50%;
   flex-shrink: 0;
 }
