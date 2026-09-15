@@ -99,13 +99,20 @@ html, body {
 
 .panel-toggle__icon {
   display: block;
-  transition: transform 0.2s ease;
 }
 
-/* Base icon points down (menu can be expanded). When the panel is expanded,
-   flip it to point up (menu can be collapsed). */
-.panel:not(.collapsed) .panel-toggle__icon {
-  transform: rotate(180deg);
+.panel-toggle__icon--close {
+  display: none;
+}
+
+/* Collapsed: show a cogwheel (menu can be opened). Expanded: show an "x"
+   (menu can be closed). */
+.panel:not(.collapsed) .panel-toggle__icon--cog {
+  display: none;
+}
+
+.panel:not(.collapsed) .panel-toggle__icon--close {
+  display: block;
 }
 
 /* ---------- Panel handle (mobile bottom-sheet seam) ---------- */
