@@ -280,7 +280,13 @@
     zoomDelta: 0.5,
     // Thousands of circle markers render far faster on canvas than SVG.
     preferCanvas: true,
-  }).setView([52.0, 19.3], 6);
+  });
+  // Fit to Poland's actual extent rather than a fixed zoom level, so narrow
+  // (mobile portrait) viewports zoom out further and still show it in full.
+  map.fitBounds([
+    [49.0, 14.1],
+    [54.9, 24.15],
+  ]);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
