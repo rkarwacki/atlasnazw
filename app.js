@@ -56,6 +56,7 @@
       addButton: "Dodaj",
       addRuleButton: "Dodaj regułę",
       addRuleSuccess: "✓ Dodano!",
+      addRuleDuplicate: "Już dodano!",
       addRuleHint:
         "Wielkość liter nie ma znaczenia. Reguły są sprawdzane od góry do dołu — wygrywa pierwsza pasująca nazwa.",
       activeRulesHeading: "Aktywne reguły",
@@ -79,6 +80,8 @@
         "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
       removeRuleTitle: "Usuń regułę",
       changeColorTitle: "Zmień kolor",
+      hideRuleTitle: "Ukryj na mapie",
+      showRuleTitle: "Pokaż na mapie",
       noActiveRules: "Brak aktywnych reguł",
       matchesPattern: "pasuje do „{display}”",
       aboutHeading: "O projekcie",
@@ -109,6 +112,7 @@
       addButton: "Add",
       addRuleButton: "Add rule",
       addRuleSuccess: "✓ Added!",
+      addRuleDuplicate: "Already added!",
       addRuleHint:
         "Case doesn't matter. Rules are checked top to bottom — the first matching name wins.",
       activeRulesHeading: "Active rules",
@@ -132,6 +136,8 @@
         "places from the National Register of Geographic Names (PRNG, CC BY 4.0 — see README)",
       removeRuleTitle: "Remove rule",
       changeColorTitle: "Change color",
+      hideRuleTitle: "Hide on map",
+      showRuleTitle: "Show on map",
       noActiveRules: "No active rules",
       matchesPattern: "matches „{display}”",
       aboutHeading: "About",
@@ -388,15 +394,29 @@
     "#d55e00", // vermillion
     "#cc79a7", // reddish purple
   ];
-  let colorsUsedCount = 0;
+  // Nice palette colors not currently assigned to a rule, most-preferred
+  // first. Starts as the full palette in order; when a rule using a palette
+  // color is deleted, its color is returned to the front so it's suggested
+  // again right away.
+  let paletteQueue = [...COLORBLIND_PALETTE];
+  // Colors freed by deleting a rule that used a non-palette (random) color.
+  // Only offered once the palette queue is empty, since palette colors are
+  // preferred.
+  let returnedColorQueue = [];
 
   function nextSuggestedColor() {
-    const color =
-      colorsUsedCount < COLORBLIND_PALETTE.length
-        ? COLORBLIND_PALETTE[colorsUsedCount]
-        : randomColor();
-    colorsUsedCount++;
-    return color;
+    if (paletteQueue.length > 0) return paletteQueue.shift();
+    if (returnedColorQueue.length > 0) return returnedColorQueue.shift();
+    return randomColor();
+  }
+
+  /** Makes a rule's color available again after the rule is deleted. */
+  function releaseColor(color) {
+    if (COLORBLIND_PALETTE.includes(color)) {
+      paletteQueue.unshift(color);
+    } else {
+      returnedColorQueue.unshift(color);
+    }
   }
 
   function randomColor() {
@@ -531,6 +551,8 @@
     const radius = getCurrentRadius();
 
     for (const { place, rule } of matched) {
+      if (rule.hidden) continue;
+
       const marker = L.circleMarker([place.lat, place.lon], {
         radius,
         color: rule.color,
@@ -546,6 +568,9 @@
     }
   }
 
+  const EYE_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const EYE_OFF_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.4 20.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a20.32 20.32 0 0 1-3.22 4.44"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
   function renderRuleList(counts) {
     ruleListEl.innerHTML = "";
 
@@ -557,19 +582,27 @@
 
     for (const rule of rules) {
       const count = counts.get(rule.id) || 0;
+      const visibilityTitle = t(rule.hidden ? "showRuleTitle" : "hideRuleTitle");
 
       const li = document.createElement("li");
-      li.className = "rule-item";
+      li.className = "rule-item" + (rule.hidden ? " rule-item--hidden" : "");
       li.innerHTML = `
         <input type="color" class="rule-item__swatch" value="${rule.color}" title="${t("changeColorTitle")}" />
         <span class="rule-item__suffix">${formatPatternDisplay(rule)}</span>
+        <button class="rule-item__visibility" title="${visibilityTitle}" aria-label="${visibilityTitle}">${rule.hidden ? EYE_OFF_ICON : EYE_ICON}</button>
         <span class="rule-item__count">${count}</span>
         <button class="rule-item__remove" title="${t("removeRuleTitle")}" aria-label="${t("removeRuleTitle")}">&times;</button>
       `;
       li.querySelector(".rule-item__swatch").addEventListener("input", (e) => {
         onRuleColorChange(rule, e.target.value);
       });
+      li.querySelector(".rule-item__visibility").addEventListener("click", () => {
+        rule.hidden = !rule.hidden;
+        render();
+      });
       li.querySelector(".rule-item__remove").addEventListener("click", () => {
+        releaseColor(rule.color);
+        ruleColorInput.value = nextSuggestedColor();
         rules = rules.filter((r) => r.id !== rule.id);
         render();
       });
@@ -644,14 +677,32 @@
 
   let ruleAddFeedbackTimeout = null;
 
-  function showRuleAddedFeedback() {
+  function showRuleFeedback(className, textKey) {
     clearTimeout(ruleAddFeedbackTimeout);
-    ruleAddButton.classList.add("rule-form__add--success");
-    ruleAddButton.textContent = t("addRuleSuccess");
+    ruleAddButton.classList.remove("rule-form__add--success", "rule-form__add--duplicate");
+    ruleAddButton.classList.add(className);
+    ruleAddButton.textContent = t(textKey);
     ruleAddFeedbackTimeout = setTimeout(() => {
-      ruleAddButton.classList.remove("rule-form__add--success");
+      ruleAddButton.classList.remove(className);
       ruleAddButton.textContent = t("addRuleButton");
     }, 1400);
+  }
+
+  // Phones auto-capitalize the first letter of a text field, which turns
+  // e.g. "ino" into "Ino" (easily misread as "Ino"/"lno"). Rules already
+  // match case-insensitively, so the field is forced to lowercase as you
+  // type to avoid the confusing capital.
+  ruleSuffixInput.addEventListener("input", () => {
+    const { selectionStart, selectionEnd } = ruleSuffixInput;
+    ruleSuffixInput.value = ruleSuffixInput.value.toLowerCase();
+    ruleSuffixInput.setSelectionRange(selectionStart, selectionEnd);
+  });
+
+  function isDuplicateRule(pattern, matchType) {
+    const lowerPattern = pattern.toLowerCase();
+    return rules.some(
+      (r) => r.matchType === matchType && r.pattern.toLowerCase() === lowerPattern
+    );
   }
 
   ruleForm.addEventListener("submit", (e) => {
@@ -659,10 +710,16 @@
     const pattern = ruleSuffixInput.value.trim();
     if (!pattern) return;
 
+    const matchType = ruleMatchTypeSelect.value;
+    if (isDuplicateRule(pattern, matchType)) {
+      showRuleFeedback("rule-form__add--duplicate", "addRuleDuplicate");
+      return;
+    }
+
     rules.push({
       id: nextRuleId++,
       pattern,
-      matchType: ruleMatchTypeSelect.value,
+      matchType,
       color: ruleColorInput.value,
     });
 
@@ -670,7 +727,7 @@
     ruleColorInput.value = nextSuggestedColor();
 
     render();
-    showRuleAddedFeedback();
+    showRuleFeedback("rule-form__add--success", "addRuleSuccess");
   });
 
   typeFilterEl.addEventListener("change", (e) => {
