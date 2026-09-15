@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const ALL_PLACE_TYPES = ["city", "village", "osada"];
+  const ALL_PLACE_TYPES = ["city", "village", "osada", "przysiolek"];
 
   // ---------------------------------------------------------------------
   // State
@@ -18,10 +18,10 @@
   let rules = [];
   let nextRuleId = 1;
 
-  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"}[]} */
+  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"|"przysiolek"}[]} */
   const places = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
-  /** @type {Set<"city" | "village" | "osada">} */
+  /** @type {Set<"city" | "village" | "osada" | "przysiolek">} */
   let placeTypeFilter = parsePlaceTypeFilter(initialHash.get("types"));
 
   /** @type {"dynamic" | "fixed"} */
@@ -68,6 +68,7 @@
       typeCity: "Miasto",
       typeVillage: "Wieś",
       typeOsada: "Osada",
+      typePrzysiolek: "Przysiółek",
       advancedSummary: "Zaawansowane",
       overlaysHeading: "Nakładki mapy",
       partitionsLabel: "Pokaż granice zaborów (1815–1918)",
@@ -90,7 +91,7 @@
       aboutHeading: "O projekcie",
       attributionHeading: "Źródła danych",
       attributionPlaces:
-        "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG), licencja CC BY 4.0 — miasta i wsie via mbroton/polish-geonames, osady wyodrębnione bezpośrednio z eksportu PRNG.",
+        "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG), licencja CC BY 4.0 — miasta i wsie via mbroton/polish-geonames, osady i przysiółki wyodrębnione bezpośrednio z eksportu PRNG.",
       attributionPartitions:
         "Granice zaborów: OpenHistoricalMap (CC0) + georgique/world-geojson (zarys Polski do przycięcia, GPL-3.0) — pochodna GPL-3.0.",
     },
@@ -125,6 +126,7 @@
       typeCity: "City",
       typeVillage: "Village",
       typeOsada: "Osada",
+      typePrzysiolek: "Przysiółek",
       advancedSummary: "Advanced",
       overlaysHeading: "Map overlays",
       partitionsLabel: "Show partition borders (1815–1918)",
@@ -147,7 +149,7 @@
       aboutHeading: "About",
       attributionHeading: "Data sources",
       attributionPlaces:
-        "Places: National Register of Geographic Names (PRNG), CC BY 4.0 license — cities and villages via mbroton/polish-geonames, osady extracted directly from the PRNG export.",
+        "Places: National Register of Geographic Names (PRNG), CC BY 4.0 license — cities and villages via mbroton/polish-geonames, osady and przysiółki extracted directly from the PRNG export.",
       attributionPartitions:
         "Partition borders: OpenHistoricalMap (CC0) + georgique/world-geojson (Poland outline used for clipping, GPL-3.0) — GPL-3.0 derivative.",
     },
