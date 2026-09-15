@@ -19,7 +19,77 @@
   let nextRuleId = 1;
 
   /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"|"przysiolek"}[]} */
-  const places = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
+  const basePlaces = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
+
+  // "Części" (named sub-parts of a village/city/osada, e.g. "Zawisty-Króle"
+  // inside the village "Zawisty") live in a separate, lazily-loaded file --
+  // together they're almost as large as the main dataset, so they're only
+  // fetched once the user actually asks for them (checkbox, or a shared URL
+  // that has parts=1).
+  /** @type {{name: string, lat: number, lon: number, type: "city"|"village"|"osada"}[]} */
+  let subpartPlaces = [];
+  let subpartsLoadPromise = null;
+  let includeSubparts = initialHash.get("parts") === "1";
+
+  /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"|"przysiolek"}[]} */
+  let places = basePlaces;
+
+  function rebuildPlaces() {
+    places = includeSubparts && subpartPlaces.length ? basePlaces.concat(subpartPlaces) : basePlaces;
+  }
+
+  /**
+   * Lazily fetches places-poland-parts.js (only once -- repeat calls reuse
+   * the same promise) and populates subpartPlaces from it.
+   */
+  function loadSubparts() {
+    if (subpartsLoadPromise) return subpartsLoadPromise;
+    subpartsLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "places-poland-parts.js";
+      script.onload = () => {
+        subpartPlaces = Array.isArray(window.POLAND_PLACES_PARTS) ? window.POLAND_PLACES_PARTS : [];
+        resolve();
+      };
+      script.onerror = () => reject(new Error("Failed to load places-poland-parts.js"));
+      document.head.appendChild(script);
+    });
+    return subpartsLoadPromise;
+  }
+
+  /**
+   * Turns the "include sub-parts" toggle on or off, fetching
+   * places-poland-parts.js the first time it's turned on.
+   */
+  function setSubpartsEnabled(enabled) {
+    includeSubparts = enabled;
+    if (!enabled) {
+      rebuildPlaces();
+      render();
+      syncUrl();
+      return;
+    }
+
+    subpartsToggle.disabled = true;
+    subpartsStatusEl.textContent = t("subpartsLoading");
+    subpartsStatusEl.classList.remove("hidden");
+    loadSubparts()
+      .then(() => {
+        rebuildPlaces();
+        render();
+        subpartsStatusEl.classList.add("hidden");
+        subpartsStatusEl.textContent = "";
+      })
+      .catch(() => {
+        includeSubparts = false;
+        subpartsToggle.checked = false;
+        subpartsStatusEl.textContent = t("subpartsError");
+        syncUrl();
+      })
+      .finally(() => {
+        subpartsToggle.disabled = false;
+      });
+  }
 
   /** @type {Set<"city" | "village" | "osada" | "przysiolek">} */
   let placeTypeFilter = parsePlaceTypeFilter(initialHash.get("types"));
@@ -75,6 +145,12 @@
       partitionPruski: "Zabór pruski",
       partitionAustriacki: "Zabór austriacki",
       partitionRosyjski: "Zabór rosyjski",
+      subpartsHeading: "Części miejscowości",
+      subpartsLabel: "Dołącz części miejscowości (np. Zawisty-Króle jako część wsi Zawisty)",
+      subpartsHint:
+        "Dodaje ok. 53 tys. dodatkowych punktów — nazwane części wsi, miast i osad, doliczane do odpowiedniego typu w filtrze powyżej. Wczytywane dopiero po zaznaczeniu.",
+      subpartsLoading: "Wczytywanie części miejscowości…",
+      subpartsError: "Nie udało się wczytać części miejscowości. Spróbuj ponownie.",
       markerSizeHeading: "Rozmiar znaczników",
       dynamicSizeLabel: "Dynamiczny rozmiar (zależny od przybliżenia)",
       fixedSizeLabel: "Stały rozmiar",
@@ -133,6 +209,12 @@
       partitionPruski: "Prussian partition",
       partitionAustriacki: "Austrian partition",
       partitionRosyjski: "Russian partition",
+      subpartsHeading: "Sub-parts (części)",
+      subpartsLabel: "Include sub-parts of places (e.g. Zawisty-Króle as part of the village Zawisty)",
+      subpartsHint:
+        "Adds around 53k extra points — named parts of villages, cities, and osady, counted under the matching type above. Loaded only once checked.",
+      subpartsLoading: "Loading sub-parts…",
+      subpartsError: "Couldn't load sub-parts. Try again.",
       markerSizeHeading: "Marker size",
       dynamicSizeLabel: "Dynamic size (based on zoom)",
       fixedSizeLabel: "Fixed size",
@@ -283,6 +365,9 @@
     }
     if (showPartitions) {
       hashParams.set("partitions", "1");
+    }
+    if (includeSubparts) {
+      hashParams.set("parts", "1");
     }
     if (rules.length) {
       hashParams.set("rules", encodeRules(rules));
@@ -478,6 +563,8 @@
   const ruleEmptyEl = document.getElementById("rule-empty");
   const typeFilterEl = document.getElementById("type-filter");
   const partitionsToggle = document.getElementById("partitions-toggle");
+  const subpartsToggle = document.getElementById("subparts-toggle");
+  const subpartsStatusEl = document.getElementById("subparts-status");
   const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
   const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
   const markerSizeInput = document.getElementById("marker-size-input");
@@ -865,6 +952,10 @@
     syncUrl();
   });
 
+  subpartsToggle.addEventListener("change", () => {
+    setSubpartsEnabled(subpartsToggle.checked);
+  });
+
   markerSizeDynamicToggle.addEventListener("change", () => {
     markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
     markerSizeFixedRow.classList.toggle("hidden", markerSizeMode === "dynamic");
@@ -956,6 +1047,9 @@
   applyStaticTranslations();
   updateLangSwitchUI();
   render();
+
+  subpartsToggle.checked = includeSubparts;
+  if (includeSubparts) setSubpartsEnabled(true);
 
   if (window.matchMedia("(max-width: 760px)").matches) {
     setPanelCollapsed(true);

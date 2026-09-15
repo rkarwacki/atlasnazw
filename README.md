@@ -7,11 +7,13 @@ define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
 No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
-files: `places-poland.js` (the bundled dataset, 63,340 places) and
-`partitions-poland.js` (an optional overlay of the historical Partitions of
-Poland borders). `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, and
-`og-image.png` are pre-built static assets; `robots.txt` and `sitemap.xml`
-round out the basic SEO setup.
+files: `places-poland.js` (the bundled dataset, 63,340 places),
+`places-poland-parts.js` (an optional +53,094 named sub-parts of places,
+lazily loaded only if turned on — see below), and `partitions-poland.js` (an
+optional overlay of the historical Partitions of Poland borders).
+`favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, and `og-image.png` are
+pre-built static assets; `robots.txt` and `sitemap.xml` round out the basic
+SEO setup.
 
 ## Run it
 
@@ -46,6 +48,14 @@ python3 -m http.server 8000
    matches per rule. Only places matching an active rule are ever drawn —
    there's no "show everything else too" mode, since with 44k+ places that
    was the main thing making the map sluggish.
+5. The **"Advanced"** panel has an **"Include sub-parts of places"** checkbox
+   (off by default) that adds ~53k more points — named sub-parts of a
+   village/city/osada (e.g. `Zawisty-Króle`, a named part of the village
+   `Zawisty`) that would otherwise never show up, since they're not in the
+   base dataset at all. It's off by default and fetched lazily (a separate
+   ~3.5MB file, `places-poland-parts.js`) only once you turn it on, since it
+   nearly doubles the point count. See [About the data](#about-the-data) for
+   what exactly it adds.
 
 The UI is in Polish or English (toggle top-right). `places-poland.js` records
 carry a `type` of `"city"`, `"village"`, `"osada"`, or `"przysiolek"`; the
@@ -94,6 +104,27 @@ coordinates (WGS 84).
   datasets also carry `province`, `district`, and `commune` fields if you
   want to re-fetch and use those.
 
+### Sub-parts of places (`places-poland-parts.js`)
+
+A PRNG `"część"` record is a named place that has its own official
+geographic name and coordinates but sits administratively *inside* a larger
+locality rather than being a separate one — e.g. `Zawisty-Króle` is
+`rodzajObiektu` `"część wsi"` (part of a village), inside the village
+`Zawisty`. These are common enough (comparable in count to everything else in
+this app combined) that they get their own lazily-loaded file instead of
+bloating `places-poland.js` for everyone by default:
+
+- **`"village"` (+41,919)** from `część wsi`, **`"city"` (+11,081)** from
+  `część miasta`, **`"osada"` (+94)** from `część osady` — each tagged with
+  its *parent* locality's type so it slots straight into the existing
+  type-filter checkboxes. `część kolonii` (265 records) is not included,
+  since `"kolonia"` isn't one of this app's tracked types.
+- Same source, license, and validity date as `places-poland.js` (PRNG,
+  CC BY 4.0, 2026-01-01).
+- `app.js` injects a `<script src="places-poland-parts.js">` tag on demand
+  (see `loadSubparts()`) the first time the checkbox is turned on, or if a
+  shared link has `parts=1` in its URL hash; it's never fetched otherwise.
+
 ### Partition borders overlay
 
 The "Advanced" panel has a checkbox that overlays the borders of the three
@@ -126,10 +157,11 @@ name-ending clusters line up with historical borders (e.g. `-ów` vs. `-owo`).
 ### Updating the bundled dataset
 
 There's no in-app way to load a different dataset — it always uses
-`places-poland.js`. To use a different dataset, replace that file's contents
-(an array of `{name, lat, lon, type?}` objects; `type` is optional, and only
-`"city"`/`"village"` are recognized). Other sources if you want to update or
-replace the bundled dataset later:
+`places-poland.js` (plus `places-poland-parts.js` if the sub-parts checkbox
+is on). To use a different dataset, replace either file's contents (an array
+of `{name, lat, lon, type?}` objects; `type` is optional, and only `"city"`,
+`"village"`, `"osada"`, and `"przysiolek"` are recognized). Other sources if
+you want to update or replace the bundled dataset later:
 
 - **GUS/TERYT** (Polish national register of localities) — names/admin codes,
   but no coordinates.
