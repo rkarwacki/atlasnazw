@@ -1,3 +1,5 @@
+*[Wersja polska](README.pl.md)*
+
 # Atlas Nazw Miejscowości (Town Name Atlas) — Poland place-name highlighter
 
 Live at [atlasnazw.pl](https://atlasnazw.pl).
