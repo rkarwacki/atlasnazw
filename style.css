@@ -628,6 +628,20 @@ html, body {
   min-width: 140px;
 }
 
+/* Enlarging/dragging the legend is a desktop-only affordance (for taking
+   screenshots) — mobile has no mouse for the resize handle or drag. */
+@media (min-width: 761px) {
+  .legend {
+    resize: both;
+    overflow: auto;
+    cursor: grab;
+  }
+  .legend--dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+}
+
 .legend__row {
   display: flex;
   align-items: center;

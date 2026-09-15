@@ -357,6 +357,45 @@
   };
   legendControl.addTo(map);
 
+  // Let the legend be dragged around the map on desktop, so it can be
+  // repositioned (and, via the CSS `resize` handle, enlarged) for
+  // screenshots. Mobile has no mouse, so this is skipped there.
+  const legendEl = document.getElementById("legend");
+  const RESIZE_HANDLE_HOTZONE = 16;
+  legendEl.addEventListener("mousedown", (e) => {
+    if (!window.matchMedia("(min-width: 761px)").matches) return;
+
+    const rect = legendEl.getBoundingClientRect();
+    const nearResizeHandle =
+      rect.right - e.clientX < RESIZE_HANDLE_HOTZONE && rect.bottom - e.clientY < RESIZE_HANDLE_HOTZONE;
+    if (nearResizeHandle) return;
+
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startLeft = rect.left;
+    const startTop = rect.top;
+
+    legendEl.style.position = "fixed";
+    legendEl.style.left = `${startLeft}px`;
+    legendEl.style.top = `${startTop}px`;
+    legendEl.style.right = "auto";
+    legendEl.style.margin = "0";
+    legendEl.classList.add("legend--dragging");
+
+    function onMove(moveEvent) {
+      legendEl.style.left = `${startLeft + (moveEvent.clientX - startX)}px`;
+      legendEl.style.top = `${startTop + (moveEvent.clientY - startY)}px`;
+    }
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      legendEl.classList.remove("legend--dragging");
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
   // ---------------------------------------------------------------------
   // DOM references
   // ---------------------------------------------------------------------
