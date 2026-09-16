@@ -5,7 +5,10 @@ import { nextSuggestedColor } from "./colors.js";
 import { map, partitionsLayer } from "./map.js";
 import { render, applyMarkerStyle } from "./render.js";
 
-map.on("zoomend", applyMarkerStyle);
+// moveend covers panning as well as zooming (it fires after zoomend too),
+// so name labels restricted to the viewport (see planNameLabels) catch up
+// when the user drags the map without changing zoom.
+map.on("moveend", applyMarkerStyle);
 
 /**
  * Turns the "include sub-parts" toggle on or off, fetching

@@ -103,7 +103,7 @@ function shouldLabelMarker(marker, restrictToViewport, bounds) {
   return !restrictToViewport || bounds.contains(marker.getLatLng());
 }
 
-// Result count for the currently rendered markers, cached so zoomend (which
+// Result count for the currently rendered markers, cached so moveend (which
 // only re-styles existing markers, not a full re-render) can re-check name
 // label eligibility without re-running the match logic.
 let lastVisibleCount = 0;
@@ -176,11 +176,12 @@ function bindMarkerTooltip(marker, showNames, radius) {
 }
 
 /**
- * Re-applies zoom-dependent marker styling: dynamic radius, and whether
+ * Re-applies view-dependent marker styling: dynamic radius, and whether
  * name labels are shown (the deep-zoom mode can switch on independently of
- * the low-result-count mode once the user zooms in far enough). Runs on
- * every zoomend, so it only re-styles existing markers rather than
- * re-rendering from scratch.
+ * the low-result-count mode once the user zooms in far enough -- and since
+ * it's restricted to the current viewport, panning can bring it in or out
+ * of effect too). Runs on every moveend (pan or zoom), so it only re-styles
+ * existing markers rather than re-rendering from scratch.
  */
 export function applyMarkerStyle() {
   const zoom = map.getZoom();
