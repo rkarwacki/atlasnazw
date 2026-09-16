@@ -177,7 +177,7 @@
           <p class="hint" id="subparts-hint" data-i18n="subpartsHint">Dodaje ok. 53 tys. dodatkowych punktów — nazwane części wsi, miast i osad, doliczane do odpowiedniego typu w filtrze powyżej. Wczytywane dopiero po zaznaczeniu.</p>
           <p class="hint hidden" id="subparts-status"></p>
 
-          <h2 data-i18n="markerSizeHeading">Rozmiar znaczników</h2>
+          <h2 data-i18n="markerSettingsHeading">Ustawienia znaczników</h2>
           <label class="checkbox-row">
             <input type="checkbox" id="marker-size-dynamic" checked />
             <span data-i18n="dynamicSizeLabel">Dynamiczny rozmiar (zależny od przybliżenia)</span>
@@ -187,6 +187,11 @@
             <input type="range" id="marker-size-input" min="1" max="20" value="6" />
             <span id="marker-size-value" class="marker-size-value">6px</span>
           </div>
+          <label class="checkbox-row" id="show-names-row">
+            <input type="checkbox" id="show-names-toggle" />
+            <span data-i18n="showNamesLabel">Pokaż nazwy miejscowości na mapie</span>
+          </label>
+          <p class="hint" id="show-names-hint" data-i18n="showNamesHintAvailable">Widoczne, gdy liczba widocznych miejscowości jest mniejsza niż 250, lub przy dostatecznie dużym przybliżeniu mapy.</p>
 
           <h2 data-i18n="shareHeading">Udostępnij</h2>
           <button type="button" id="share-link-button" class="share-button" data-i18n="shareButton">Skopiuj link ze stanem</button>

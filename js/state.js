@@ -33,6 +33,10 @@ export const state = {
   fixedMarkerRadius: validMarkerRadius(initialHash.get("markerRadius")) ?? 6,
 
   showPartitions: initialHash.get("partitions") === "1",
+
+  // This just records the user's intent -- whether name labels actually
+  // draw also depends on result count/zoom, see namesEligible in render.js.
+  showNameLabels: initialHash.get("names") === "1",
 };
 
 function rebuildPlacesList() {
@@ -80,6 +84,7 @@ export function buildShareUrl() {
     fixedMarkerRadius: state.fixedMarkerRadius,
     showPartitions: state.showPartitions,
     includeSubparts: state.includeSubparts,
+    showNameLabels: state.showNameLabels,
     rules: state.rules,
   });
 }

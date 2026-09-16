@@ -3,9 +3,9 @@ import { initialHash, decodeRules } from "./url-state.js";
 import { t, getLang, setLang, applyStaticTranslations } from "./i18n.js";
 import { nextSuggestedColor } from "./colors.js";
 import { map, partitionsLayer } from "./map.js";
-import { render, applyMarkerRadius } from "./render.js";
+import { render, applyMarkerStyle } from "./render.js";
 
-map.on("zoomend", applyMarkerRadius);
+map.on("zoomend", applyMarkerStyle);
 
 /**
  * Turns the "include sub-parts" toggle on or off, fetching
@@ -60,6 +60,7 @@ const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
 const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
 const markerSizeInput = document.getElementById("marker-size-input");
 const markerSizeValueEl = document.getElementById("marker-size-value");
+const showNamesToggle = document.getElementById("show-names-toggle");
 const panelEl = document.getElementById("panel");
 const panelToggleBtn = document.getElementById("panel-toggle");
 const panelHandleBtn = document.getElementById("panel-handle");
@@ -164,14 +165,20 @@ subpartsToggle.addEventListener("change", () => {
 markerSizeDynamicToggle.addEventListener("change", () => {
   state.markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
   markerSizeFixedRow.classList.toggle("hidden", state.markerSizeMode === "dynamic");
-  applyMarkerRadius();
+  applyMarkerStyle();
   syncUrl();
 });
 
 markerSizeInput.addEventListener("input", () => {
   state.fixedMarkerRadius = Number(markerSizeInput.value);
   markerSizeValueEl.textContent = `${state.fixedMarkerRadius}px`;
-  if (state.markerSizeMode === "fixed") applyMarkerRadius();
+  if (state.markerSizeMode === "fixed") applyMarkerStyle();
+  syncUrl();
+});
+
+showNamesToggle.addEventListener("change", () => {
+  state.showNameLabels = showNamesToggle.checked;
+  applyMarkerStyle();
   syncUrl();
 });
 

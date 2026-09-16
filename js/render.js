@@ -71,17 +71,56 @@ function computeMatches() {
 // ---------------------------------------------------------------------
 
 const placeCountLineEl = document.getElementById("place-count-line");
+const showNamesToggleEl = document.getElementById("show-names-toggle");
+const showNamesHintEl = document.getElementById("show-names-hint");
+
+// Permanent name tooltips only make sense once either the result set is
+// small enough to read, or the user is zoomed in close enough that only a
+// handful of markers are actually on screen -- above/below that, the map
+// would be a wall of overlapping labels and Leaflet would be creating
+// hundreds of DOM nodes per redraw.
+export const MAX_NAME_LABELS = 250;
+const NAME_LABEL_MIN_ZOOM = 14;
+
+function namesEligible(visibleCount, zoom) {
+  return visibleCount < MAX_NAME_LABELS || zoom >= NAME_LABEL_MIN_ZOOM;
+}
+
+/**
+ * Whether an individual marker should get a permanent label. Below the cap,
+ * every matching place gets one (the whole point of the low-result-count
+ * mode is to see them all at once, wherever they are). Above the cap --
+ * i.e. only eligible because of deep zoom -- only markers actually inside
+ * the current viewport qualify, since binding a permanent tooltip (a real
+ * DOM node) to thousands of off-screen markers would be wasteful and slow.
+ */
+function shouldLabelMarker(marker, capExceeded, bounds) {
+  return !capExceeded || bounds.contains(marker.getLatLng());
+}
+
+// Result count for the currently rendered markers, cached so zoomend (which
+// only re-styles existing markers, not a full re-render) can re-check name
+// label eligibility without re-running the match logic.
+let lastVisibleCount = 0;
 
 export function render() {
   const { matched, counts } = computeMatches();
-  renderMarkers(matched);
+  lastVisibleCount = renderMarkers(matched);
   renderRuleList(counts);
   renderLegend(counts);
+  syncShowNamesUI(lastVisibleCount, map.getZoom());
   placeCountLineEl.textContent = t("placeCountText", {
     count: state.places.length,
     source: t("sourcePoland"),
   });
   syncUrl();
+}
+
+function syncShowNamesUI(visibleCount, zoom) {
+  showNamesToggleEl.checked = state.showNameLabels;
+  const eligible = namesEligible(visibleCount, zoom);
+  showNamesHintEl.dataset.i18n = eligible ? "showNamesHintAvailable" : "showNamesHintTooMany";
+  showNamesHintEl.textContent = t(showNamesHintEl.dataset.i18n, { count: visibleCount });
 }
 
 // Marker radius grows with zoom: 1px fully zoomed out, up to 10px by the
@@ -106,19 +145,69 @@ function getCurrentRadius() {
     : getMarkerRadius(map.getZoom());
 }
 
-export function applyMarkerRadius() {
+// A marker can only have one bound tooltip at a time: with names shown
+// permanently there's no need for the hover tooltip too, since the name
+// (the main thing it added over the permanent label) is already visible.
+// `nameLabel`/`hoverLabel` are cached on the marker at creation time so
+// re-styling on zoom doesn't need to recompute them.
+function bindMarkerTooltip(marker, showNames, radius) {
+  if (showNames) {
+    marker.bindTooltip(marker.nameLabel, {
+      className: "place-tooltip place-tooltip--name",
+      permanent: true,
+      direction: "top",
+      offset: [0, -radius],
+    });
+  } else {
+    marker.bindTooltip(marker.hoverLabel, { className: "place-tooltip" });
+  }
+}
+
+/**
+ * Re-applies zoom-dependent marker styling: dynamic radius, and whether
+ * name labels are shown (once the user is zoomed in close enough, they
+ * switch on even if the result set is above MAX_NAME_LABELS). Runs on
+ * every zoomend, so it only re-styles existing markers rather than
+ * re-rendering from scratch.
+ */
+export function applyMarkerStyle() {
+  const zoom = map.getZoom();
   const radius = getCurrentRadius();
-  markerLayer.eachLayer((marker) => marker.setRadius(radius));
+  const eligible = state.showNameLabels && namesEligible(lastVisibleCount, zoom);
+  const capExceeded = lastVisibleCount >= MAX_NAME_LABELS;
+  const bounds = eligible && capExceeded ? map.getBounds() : null;
+
+  markerLayer.eachLayer((marker) => {
+    marker.setRadius(radius);
+
+    const showNames = eligible && shouldLabelMarker(marker, capExceeded, bounds);
+    const tooltip = marker.getTooltip();
+    const isPermanent = !!tooltip?.options.permanent;
+    if (showNames !== isPermanent) {
+      marker.unbindTooltip();
+      bindMarkerTooltip(marker, showNames, radius);
+    } else if (isPermanent) {
+      // Permanent tooltips are offset above the marker by its radius; keep
+      // that in sync as dynamic sizing changes the radius with zoom.
+      tooltip.options.offset = [0, -radius];
+      tooltip.update();
+    }
+  });
+
+  syncShowNamesUI(lastVisibleCount, zoom);
 }
 
 function renderMarkers(matched) {
   markerLayer.clearLayers();
 
+  const zoom = map.getZoom();
   const radius = getCurrentRadius();
+  const visible = matched.filter(({ rule }) => !rule.hidden);
+  const eligible = state.showNameLabels && namesEligible(visible.length, zoom);
+  const capExceeded = visible.length >= MAX_NAME_LABELS;
+  const bounds = eligible && capExceeded ? map.getBounds() : null;
 
-  for (const { place, rule } of matched) {
-    if (rule.hidden) continue;
-
+  for (const { place, rule } of visible) {
     const marker = L.circleMarker([place.lat, place.lon], {
       radius,
       color: rule.color,
@@ -127,11 +216,15 @@ function renderMarkers(matched) {
       fillOpacity: 0.85,
     });
     marker.ruleId = rule.id;
+    marker.nameLabel = escapeHtml(place.name);
+    marker.hoverLabel = `<strong>${escapeHtml(place.name)}</strong><br/>${t("matchesPattern", { display: formatPatternDisplay(rule) })}`;
 
-    const label = `<strong>${escapeHtml(place.name)}</strong><br/>${t("matchesPattern", { display: formatPatternDisplay(rule) })}`;
-    marker.bindTooltip(label, { className: "place-tooltip" });
+    const showNames = eligible && shouldLabelMarker(marker, capExceeded, bounds);
+    bindMarkerTooltip(marker, showNames, radius);
     marker.addTo(markerLayer);
   }
+
+  return visible.length;
 }
 
 const EYE_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
