@@ -125,8 +125,11 @@ export function buildShareUrl({
   if (showNamesFewResults) {
     hashParams.set("namesFew", "1");
   }
-  if (showNamesDeepZoom) {
-    hashParams.set("namesZoom", "1");
+  // Deep-zoom mode defaults on (see state.js), so its off state has to be
+  // written explicitly for a shared link to reproduce it; the on state
+  // matches the default and doesn't need writing out.
+  if (!showNamesDeepZoom) {
+    hashParams.set("namesZoom", "0");
   }
   if (rules.length) {
     hashParams.set("rules", encodeRules(rules));

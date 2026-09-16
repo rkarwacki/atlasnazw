@@ -36,9 +36,11 @@ export const state = {
 
   // These just record the user's intent for each of the two independent
   // name-label modes -- whether labels actually draw also depends on
-  // result count/zoom, see planNameLabels in render.js.
+  // result count/zoom, see planNameLabels in render.js. Deep-zoom mode
+  // defaults on (a shared link can still turn it off explicitly via
+  // namesZoom=0, see buildShareUrl).
   showNamesFewResults: initialHash.get("namesFew") === "1",
-  showNamesDeepZoom: initialHash.get("namesZoom") === "1",
+  showNamesDeepZoom: initialHash.has("namesZoom") ? initialHash.get("namesZoom") === "1" : true,
 };
 
 function rebuildPlacesList() {
