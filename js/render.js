@@ -128,7 +128,10 @@ function syncShowNamesUI(visibleCount, zoom) {
   showNamesZoomToggleEl.checked = state.showNamesDeepZoom;
   showNamesZoomHintEl.textContent = t("showNamesZoomHint", {
     minZoom: NAME_LABEL_MIN_ZOOM,
-    zoom: Math.round(zoom),
+    // Floor, never round: zoom is a multiple of 0.5 (see zoomSnap in
+    // map.js), and rounding 10.5 up to "11" would falsely claim the
+    // threshold is met when labels are actually still off.
+    zoom: Math.floor(zoom),
   });
 }
 
