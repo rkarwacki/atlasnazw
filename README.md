@@ -8,7 +8,8 @@ A small static web app: a Leaflet map of Poland (OpenStreetMap tiles) where you
 define one or more "rules" — a name ending plus a color — and every place
 whose name matches gets highlighted in that color.
 
-No backend, no build step. It's `index.html`, `style.css`, `app.js`, plus data
+No backend, no build step. It's `index.html`, `style.css`, the `js/` app
+scripts (native ES modules, no bundler), plus data
 files: `places-poland.js` (the bundled dataset, 63,340 places),
 `places-poland-parts.js` (an optional +53,094 named sub-parts of places,
 lazily loaded only if turned on — see below), and `partitions-poland.js` (an
@@ -123,7 +124,7 @@ bloating `places-poland.js` for everyone by default:
   since `"kolonia"` isn't one of this app's tracked types.
 - Same source, license, and validity date as `places-poland.js` (PRNG,
   CC BY 4.0, 2026-01-01).
-- `app.js` injects a `<script src="places-poland-parts.js">` tag on demand
+- `js/state.js` injects a `<script src="places-poland-parts.js">` tag on demand
   (see `loadSubparts()`) the first time the checkbox is turned on, or if a
   shared link has `parts=1` in its URL hash; it's never fetched otherwise.
 

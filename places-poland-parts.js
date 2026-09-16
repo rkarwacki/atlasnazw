@@ -2,7 +2,7 @@
 // OPTIONAL DATA: 53,094 named sub-parts ("części") of
 // Polish villages, cities, and osady, with coordinates (WGS 84).
 //
-// This file is NOT loaded by default -- app.js fetches it lazily, only when
+// This file is NOT loaded by default -- js/state.js fetches it lazily, only when
 // the "Include sub-parts" checkbox in the Advanced panel is turned on (or
 // the shared-link URL asks for it), since it roughly doubles the point count
 // of the main dataset.
