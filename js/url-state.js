@@ -103,7 +103,8 @@ export function buildShareUrl({
   fixedMarkerRadius,
   showPartitions,
   includeSubparts,
-  showNameLabels,
+  showNamesFewResults,
+  showNamesDeepZoom,
   rules,
 }) {
   const queryParams = new URLSearchParams();
@@ -121,8 +122,11 @@ export function buildShareUrl({
   if (includeSubparts) {
     hashParams.set("parts", "1");
   }
-  if (showNameLabels) {
-    hashParams.set("names", "1");
+  if (showNamesFewResults) {
+    hashParams.set("namesFew", "1");
+  }
+  if (showNamesDeepZoom) {
+    hashParams.set("namesZoom", "1");
   }
   if (rules.length) {
     hashParams.set("rules", encodeRules(rules));

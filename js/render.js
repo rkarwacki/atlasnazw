@@ -71,31 +71,36 @@ function computeMatches() {
 // ---------------------------------------------------------------------
 
 const placeCountLineEl = document.getElementById("place-count-line");
-const showNamesToggleEl = document.getElementById("show-names-toggle");
-const showNamesHintEl = document.getElementById("show-names-hint");
+const showNamesFewToggleEl = document.getElementById("show-names-few-toggle");
+const showNamesFewHintEl = document.getElementById("show-names-few-hint");
+const showNamesZoomToggleEl = document.getElementById("show-names-zoom-toggle");
+const showNamesZoomHintEl = document.getElementById("show-names-zoom-hint");
 
-// Permanent name tooltips only make sense once either the result set is
-// small enough to read, or the user is zoomed in close enough that only a
-// handful of markers are actually on screen -- above/below that, the map
-// would be a wall of overlapping labels and Leaflet would be creating
-// hundreds of DOM nodes per redraw.
+// Two independent switches for permanent name tooltips: a low-result-count
+// mode (see every matching place at once, wherever it is) and a deep-zoom
+// mode (only a handful of markers are actually on screen at a time). Either
+// can be toggled on its own; below/above these thresholds is where the map
+// would otherwise become a wall of overlapping labels.
 export const MAX_NAME_LABELS = 250;
-const NAME_LABEL_MIN_ZOOM = 14;
-
-function namesEligible(visibleCount, zoom) {
-  return visibleCount < MAX_NAME_LABELS || zoom >= NAME_LABEL_MIN_ZOOM;
-}
+const NAME_LABEL_MIN_ZOOM = 11;
 
 /**
- * Whether an individual marker should get a permanent label. Below the cap,
- * every matching place gets one (the whole point of the low-result-count
- * mode is to see them all at once, wherever they are). Above the cap --
- * i.e. only eligible because of deep zoom -- only markers actually inside
- * the current viewport qualify, since binding a permanent tooltip (a real
- * DOM node) to thousands of off-screen markers would be wasteful and slow.
+ * Decides whether name labels should render at all, and if so, whether
+ * they need to be restricted to markers inside the current viewport.
+ * The low-result-count mode is unrestricted by design -- the whole point
+ * is to see every matching place at once, wherever it is. The deep-zoom
+ * mode is restricted to the viewport, since binding a permanent tooltip
+ * (a real DOM node) to thousands of off-screen markers would be wasteful
+ * and slow -- but at deep zoom there are only ever a few on screen anyway.
  */
-function shouldLabelMarker(marker, capExceeded, bounds) {
-  return !capExceeded || bounds.contains(marker.getLatLng());
+function planNameLabels(visibleCount, zoom) {
+  const unrestricted = state.showNamesFewResults && visibleCount < MAX_NAME_LABELS;
+  const viaZoom = state.showNamesDeepZoom && zoom >= NAME_LABEL_MIN_ZOOM;
+  return { eligible: unrestricted || viaZoom, restrictToViewport: !unrestricted && viaZoom };
+}
+
+function shouldLabelMarker(marker, restrictToViewport, bounds) {
+  return !restrictToViewport || bounds.contains(marker.getLatLng());
 }
 
 // Result count for the currently rendered markers, cached so zoomend (which
@@ -117,10 +122,14 @@ export function render() {
 }
 
 function syncShowNamesUI(visibleCount, zoom) {
-  showNamesToggleEl.checked = state.showNameLabels;
-  const eligible = namesEligible(visibleCount, zoom);
-  showNamesHintEl.dataset.i18n = eligible ? "showNamesHintAvailable" : "showNamesHintTooMany";
-  showNamesHintEl.textContent = t(showNamesHintEl.dataset.i18n, { count: visibleCount });
+  showNamesFewToggleEl.checked = state.showNamesFewResults;
+  showNamesFewHintEl.textContent = t("showNamesFewHint", { count: visibleCount });
+
+  showNamesZoomToggleEl.checked = state.showNamesDeepZoom;
+  showNamesZoomHintEl.textContent = t("showNamesZoomHint", {
+    minZoom: NAME_LABEL_MIN_ZOOM,
+    zoom: Math.round(zoom),
+  });
 }
 
 // Marker radius grows with zoom: 1px fully zoomed out, up to 10px by the
@@ -165,22 +174,21 @@ function bindMarkerTooltip(marker, showNames, radius) {
 
 /**
  * Re-applies zoom-dependent marker styling: dynamic radius, and whether
- * name labels are shown (once the user is zoomed in close enough, they
- * switch on even if the result set is above MAX_NAME_LABELS). Runs on
+ * name labels are shown (the deep-zoom mode can switch on independently of
+ * the low-result-count mode once the user zooms in far enough). Runs on
  * every zoomend, so it only re-styles existing markers rather than
  * re-rendering from scratch.
  */
 export function applyMarkerStyle() {
   const zoom = map.getZoom();
   const radius = getCurrentRadius();
-  const eligible = state.showNameLabels && namesEligible(lastVisibleCount, zoom);
-  const capExceeded = lastVisibleCount >= MAX_NAME_LABELS;
-  const bounds = eligible && capExceeded ? map.getBounds() : null;
+  const { eligible, restrictToViewport } = planNameLabels(lastVisibleCount, zoom);
+  const bounds = restrictToViewport ? map.getBounds() : null;
 
   markerLayer.eachLayer((marker) => {
     marker.setRadius(radius);
 
-    const showNames = eligible && shouldLabelMarker(marker, capExceeded, bounds);
+    const showNames = eligible && shouldLabelMarker(marker, restrictToViewport, bounds);
     const tooltip = marker.getTooltip();
     const isPermanent = !!tooltip?.options.permanent;
     if (showNames !== isPermanent) {
@@ -203,9 +211,8 @@ function renderMarkers(matched) {
   const zoom = map.getZoom();
   const radius = getCurrentRadius();
   const visible = matched.filter(({ rule }) => !rule.hidden);
-  const eligible = state.showNameLabels && namesEligible(visible.length, zoom);
-  const capExceeded = visible.length >= MAX_NAME_LABELS;
-  const bounds = eligible && capExceeded ? map.getBounds() : null;
+  const { eligible, restrictToViewport } = planNameLabels(visible.length, zoom);
+  const bounds = restrictToViewport ? map.getBounds() : null;
 
   for (const { place, rule } of visible) {
     const marker = L.circleMarker([place.lat, place.lon], {
@@ -219,7 +226,7 @@ function renderMarkers(matched) {
     marker.nameLabel = escapeHtml(place.name);
     marker.hoverLabel = `<strong>${escapeHtml(place.name)}</strong><br/>${t("matchesPattern", { display: formatPatternDisplay(rule) })}`;
 
-    const showNames = eligible && shouldLabelMarker(marker, capExceeded, bounds);
+    const showNames = eligible && shouldLabelMarker(marker, restrictToViewport, bounds);
     bindMarkerTooltip(marker, showNames, radius);
     marker.addTo(markerLayer);
   }

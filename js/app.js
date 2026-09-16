@@ -60,7 +60,8 @@ const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
 const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
 const markerSizeInput = document.getElementById("marker-size-input");
 const markerSizeValueEl = document.getElementById("marker-size-value");
-const showNamesToggle = document.getElementById("show-names-toggle");
+const showNamesFewToggle = document.getElementById("show-names-few-toggle");
+const showNamesZoomToggle = document.getElementById("show-names-zoom-toggle");
 const panelEl = document.getElementById("panel");
 const panelToggleBtn = document.getElementById("panel-toggle");
 const panelHandleBtn = document.getElementById("panel-handle");
@@ -176,8 +177,14 @@ markerSizeInput.addEventListener("input", () => {
   syncUrl();
 });
 
-showNamesToggle.addEventListener("change", () => {
-  state.showNameLabels = showNamesToggle.checked;
+showNamesFewToggle.addEventListener("change", () => {
+  state.showNamesFewResults = showNamesFewToggle.checked;
+  applyMarkerStyle();
+  syncUrl();
+});
+
+showNamesZoomToggle.addEventListener("change", () => {
+  state.showNamesDeepZoom = showNamesZoomToggle.checked;
   applyMarkerStyle();
   syncUrl();
 });

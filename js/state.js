@@ -34,9 +34,11 @@ export const state = {
 
   showPartitions: initialHash.get("partitions") === "1",
 
-  // This just records the user's intent -- whether name labels actually
-  // draw also depends on result count/zoom, see namesEligible in render.js.
-  showNameLabels: initialHash.get("names") === "1",
+  // These just record the user's intent for each of the two independent
+  // name-label modes -- whether labels actually draw also depends on
+  // result count/zoom, see planNameLabels in render.js.
+  showNamesFewResults: initialHash.get("namesFew") === "1",
+  showNamesDeepZoom: initialHash.get("namesZoom") === "1",
 };
 
 function rebuildPlacesList() {
@@ -84,7 +86,8 @@ export function buildShareUrl() {
     fixedMarkerRadius: state.fixedMarkerRadius,
     showPartitions: state.showPartitions,
     includeSubparts: state.includeSubparts,
-    showNameLabels: state.showNameLabels,
+    showNamesFewResults: state.showNamesFewResults,
+    showNamesDeepZoom: state.showNamesDeepZoom,
     rules: state.rules,
   });
 }

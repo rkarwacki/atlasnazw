@@ -187,11 +187,16 @@
             <input type="range" id="marker-size-input" min="1" max="20" value="6" />
             <span id="marker-size-value" class="marker-size-value">6px</span>
           </div>
-          <label class="checkbox-row" id="show-names-row">
-            <input type="checkbox" id="show-names-toggle" />
-            <span data-i18n="showNamesLabel">Pokaż nazwy miejscowości na mapie</span>
+          <label class="checkbox-row" id="show-names-few-row">
+            <input type="checkbox" id="show-names-few-toggle" />
+            <span data-i18n="showNamesFewLabel">Pokaż nazwy, gdy wyników jest mniej niż 250</span>
           </label>
-          <p class="hint" id="show-names-hint" data-i18n="showNamesHintAvailable">Widoczne, gdy liczba widocznych miejscowości jest mniejsza niż 250, lub przy dostatecznie dużym przybliżeniu mapy.</p>
+          <p class="hint" id="show-names-few-hint" data-i18n="showNamesFewHint">Dostępne, gdy liczba widocznych miejscowości jest mniejsza niż 250 (obecnie: 0).</p>
+          <label class="checkbox-row" id="show-names-zoom-row">
+            <input type="checkbox" id="show-names-zoom-toggle" />
+            <span data-i18n="showNamesZoomLabel">Pokaż nazwy przy odpowiednim przybliżeniu mapy</span>
+          </label>
+          <p class="hint" id="show-names-zoom-hint" data-i18n="showNamesZoomHint">Dostępne od poziomu przybliżenia 11 (obecnie: 0).</p>
 
           <h2 data-i18n="shareHeading">Udostępnij</h2>
           <button type="button" id="share-link-button" class="share-button" data-i18n="shareButton">Skopiuj link ze stanem</button>
