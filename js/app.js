@@ -3,9 +3,12 @@ import { initialHash, decodeRules } from "./url-state.js";
 import { t, getLang, setLang, applyStaticTranslations } from "./i18n.js";
 import { nextSuggestedColor } from "./colors.js";
 import { map, partitionsLayer } from "./map.js";
-import { render, applyMarkerRadius } from "./render.js";
+import { render, applyMarkerStyle } from "./render.js";
 
-map.on("zoomend", applyMarkerRadius);
+// moveend covers panning as well as zooming (it fires after zoomend too),
+// so name labels restricted to the viewport (see planNameLabels) catch up
+// when the user drags the map without changing zoom.
+map.on("moveend", applyMarkerStyle);
 
 /**
  * Turns the "include sub-parts" toggle on or off, fetching
@@ -60,6 +63,8 @@ const markerSizeDynamicToggle = document.getElementById("marker-size-dynamic");
 const markerSizeFixedRow = document.getElementById("marker-size-fixed-row");
 const markerSizeInput = document.getElementById("marker-size-input");
 const markerSizeValueEl = document.getElementById("marker-size-value");
+const showNamesFewToggle = document.getElementById("show-names-few-toggle");
+const showNamesZoomToggle = document.getElementById("show-names-zoom-toggle");
 const panelEl = document.getElementById("panel");
 const panelToggleBtn = document.getElementById("panel-toggle");
 const panelHandleBtn = document.getElementById("panel-handle");
@@ -164,14 +169,26 @@ subpartsToggle.addEventListener("change", () => {
 markerSizeDynamicToggle.addEventListener("change", () => {
   state.markerSizeMode = markerSizeDynamicToggle.checked ? "dynamic" : "fixed";
   markerSizeFixedRow.classList.toggle("hidden", state.markerSizeMode === "dynamic");
-  applyMarkerRadius();
+  applyMarkerStyle();
   syncUrl();
 });
 
 markerSizeInput.addEventListener("input", () => {
   state.fixedMarkerRadius = Number(markerSizeInput.value);
   markerSizeValueEl.textContent = `${state.fixedMarkerRadius}px`;
-  if (state.markerSizeMode === "fixed") applyMarkerRadius();
+  if (state.markerSizeMode === "fixed") applyMarkerStyle();
+  syncUrl();
+});
+
+showNamesFewToggle.addEventListener("change", () => {
+  state.showNamesFewResults = showNamesFewToggle.checked;
+  applyMarkerStyle();
+  syncUrl();
+});
+
+showNamesZoomToggle.addEventListener("change", () => {
+  state.showNamesDeepZoom = showNamesZoomToggle.checked;
+  applyMarkerStyle();
   syncUrl();
 });
 

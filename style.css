@@ -648,6 +648,19 @@ html, body {
   font-size: 12px;
 }
 
+.place-tooltip--name {
+  padding: 1px 5px;
+  font-size: 11px;
+  background: rgba(20, 33, 31, 0.85);
+  color: var(--paper, #f6f3ec);
+  border: none;
+  box-shadow: none;
+}
+
+.place-tooltip--name::before {
+  display: none;
+}
+
 .legend {
   position: relative;
   background: rgba(20, 33, 31, 0.92);
