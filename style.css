@@ -674,16 +674,17 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Enlarging/dragging the legend is a desktop-only affordance (for taking
-   screenshots) — mobile has no mouse for the resize handle or drag. A
-   custom handle is used instead of the native CSS `resize` property, which
-   doesn't behave reliably inside Leaflet's flex-positioned control corner. */
+/* Enlarging/dragging the legend (and the optional watermark box, see
+   .watermark below) is a desktop-only affordance (for taking screenshots)
+   — mobile has no mouse for the resize handle or drag. A custom handle is
+   used instead of the native CSS `resize` property, which doesn't behave
+   reliably inside Leaflet's flex-positioned control corner. */
 @media (min-width: 761px) {
-  .legend {
+  .draggable-box {
     overflow: auto;
     cursor: grab;
   }
-  .legend::after {
+  .draggable-box::after {
     content: "";
     position: absolute;
     right: 2px;
@@ -691,6 +692,21 @@ html, body {
     width: 9px;
     height: 9px;
     cursor: nwse-resize;
+    background: linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 40%,
+      var(--ink) 40%,
+      var(--ink) 55%,
+      transparent 55%,
+      transparent 70%,
+      var(--ink) 70%,
+      var(--ink) 85%,
+      transparent 85%
+    );
+    opacity: 0.6;
+  }
+  .legend::after {
     background: linear-gradient(
       135deg,
       transparent 0,
@@ -703,12 +719,28 @@ html, body {
       var(--paper) 85%,
       transparent 85%
     );
-    opacity: 0.6;
   }
-  .legend--dragging {
+  .draggable-box--dragging {
     cursor: grabbing;
     user-select: none;
   }
+}
+
+/* Optional "?watermark=1" URL param: a plain, undecorated label so it reads
+   as a photo credit rather than UI chrome in a screenshot. Positioned like
+   the legend (draggable/resizable on desktop), but with no box around it. */
+.watermark {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  color: #000;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  padding: 2px 18px 2px 4px;
+  box-sizing: border-box;
+  z-index: 1000;
 }
 
 .legend__row {

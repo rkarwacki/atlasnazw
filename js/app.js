@@ -276,8 +276,10 @@ if (decoded) {
   state.rules = decoded.rules;
   state.nextRuleId = decoded.nextId;
 } else {
-  state.rules.push({ id: state.nextRuleId++, pattern: "ów", matchType: "suffix", color: nextSuggestedColor() });
-  state.rules.push({ id: state.nextRuleId++, pattern: "owo", matchType: "suffix", color: nextSuggestedColor() });
+  const owColor = nextSuggestedColor();
+  const owoColor = nextSuggestedColor();
+  state.rules.push({ id: state.nextRuleId++, pattern: "ów", matchType: "suffix", color: owoColor });
+  state.rules.push({ id: state.nextRuleId++, pattern: "owo", matchType: "suffix", color: owColor });
 }
 ruleColorInput.value = nextSuggestedColor();
 

@@ -1,4 +1,5 @@
 import { t } from "./i18n.js";
+import { initialQuery } from "./url-state.js";
 
 // ---------------------------------------------------------------------
 // Map setup
@@ -72,19 +73,85 @@ export const markerLayer = L.layerGroup().addTo(map);
 
 const legendControl = L.control({ position: "topright" });
 legendControl.onAdd = function () {
-  const div = L.DomUtil.create("div", "legend");
+  const div = L.DomUtil.create("div", "legend draggable-box");
   div.id = "legend";
   return div;
 };
 legendControl.addTo(map);
 
-// Let the legend be dragged and enlarged on desktop, so it can be
-// repositioned and made more legible for screenshots. Mobile has no
-// mouse, so this is skipped there. A custom resize handle is used
-// instead of the native CSS `resize` property, which doesn't play well
-// with the flex-positioned Leaflet control corner it lives in.
+// Let a box be dragged and enlarged on desktop, so it can be repositioned
+// and made more legible for screenshots. Mobile has no mouse, so this is
+// skipped there. A custom resize handle is used instead of the native CSS
+// `resize` property, which doesn't play well with the flex-positioned
+// Leaflet control corner the legend lives in.
+//
+// Dragging/resizing pans the map underneath the box otherwise, which is
+// confusing, so map panning is disabled for the duration of the gesture.
+function makeDraggableResizable(el, { minWidth, minHeight, onResize }) {
+  el.addEventListener("mousedown", (e) => {
+    if (!window.matchMedia("(min-width: 761px)").matches) return;
+
+    const rect = el.getBoundingClientRect();
+    const nearResizeHandle =
+      rect.right - e.clientX < RESIZE_HANDLE_HOTZONE && rect.bottom - e.clientY < RESIZE_HANDLE_HOTZONE;
+
+    e.preventDefault();
+    map.dragging.disable();
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    if (nearResizeHandle) {
+      const startWidth = rect.width;
+      const startHeight = rect.height;
+      el.classList.add("draggable-box--dragging");
+
+      function onResizeMove(moveEvent) {
+        el.style.width = `${Math.max(minWidth, startWidth + (moveEvent.clientX - startX))}px`;
+        el.style.height = `${Math.max(minHeight, startHeight + (moveEvent.clientY - startY))}px`;
+        onResize?.();
+      }
+      function onResizeUp() {
+        document.removeEventListener("mousemove", onResizeMove);
+        document.removeEventListener("mouseup", onResizeUp);
+        el.classList.remove("draggable-box--dragging");
+        map.dragging.enable();
+      }
+      document.addEventListener("mousemove", onResizeMove);
+      document.addEventListener("mouseup", onResizeUp);
+      return;
+    }
+
+    const startLeft = rect.left;
+    const startTop = rect.top;
+
+    el.style.position = "fixed";
+    // Clears any centering transform (e.g. the watermark's default
+    // translateX(-50%)) — from here on, left/top alone track the pointer.
+    el.style.transform = "none";
+    el.style.left = `${startLeft}px`;
+    el.style.top = `${startTop}px`;
+    el.style.right = "auto";
+    el.style.bottom = "auto";
+    el.style.margin = "0";
+    el.classList.add("draggable-box--dragging");
+
+    function onMove(moveEvent) {
+      el.style.left = `${startLeft + (moveEvent.clientX - startX)}px`;
+      el.style.top = `${startTop + (moveEvent.clientY - startY)}px`;
+    }
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      el.classList.remove("draggable-box--dragging");
+      map.dragging.enable();
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+}
+
+const RESIZE_HANDLE_HOTZONE = 16;
 export const legendEl = document.getElementById("legend");
-const LEGEND_RESIZE_HANDLE_HOTZONE = 16;
 const LEGEND_MIN_WIDTH = 100;
 const LEGEND_MIN_HEIGHT = 32;
 // Must match .legend's font-size/line-height in style.css: the scale
@@ -120,60 +187,52 @@ export function updateLegendFontScale() {
   const naturalHeightPerRow = LEGEND_BASE_FONT_SIZE * LEGEND_LINE_HEIGHT;
   const scale = Math.min(LEGEND_MAX_FONT_SCALE, Math.max(1, heightPerRow / naturalHeightPerRow));
   legendEl.style.fontSize = `${LEGEND_BASE_FONT_SIZE * scale}px`;
+
+  // The row-count formula above assumes every row stays on one line, but a
+  // box made wide-and-short (or containing long place names) can force rows
+  // to wrap at that font size, growing taller than the formula predicted and
+  // spilling past the bottom of the box. Back the scale off until whatever
+  // actually rendered fits.
+  if (legendEl.scrollHeight > legendEl.clientHeight) {
+    let lo = 1;
+    let hi = scale;
+    for (let i = 0; i < 8; i++) {
+      const mid = (lo + hi) / 2;
+      legendEl.style.fontSize = `${LEGEND_BASE_FONT_SIZE * mid}px`;
+      if (legendEl.scrollHeight > legendEl.clientHeight) {
+        hi = mid;
+      } else {
+        lo = mid;
+      }
+    }
+    legendEl.style.fontSize = `${LEGEND_BASE_FONT_SIZE * lo}px`;
+  }
 }
 
-legendEl.addEventListener("mousedown", (e) => {
-  if (!window.matchMedia("(min-width: 761px)").matches) return;
-
-  const rect = legendEl.getBoundingClientRect();
-  const nearResizeHandle =
-    rect.right - e.clientX < LEGEND_RESIZE_HANDLE_HOTZONE &&
-    rect.bottom - e.clientY < LEGEND_RESIZE_HANDLE_HOTZONE;
-
-  e.preventDefault();
-  const startX = e.clientX;
-  const startY = e.clientY;
-
-  if (nearResizeHandle) {
-    const startWidth = rect.width;
-    const startHeight = rect.height;
-    legendEl.classList.add("legend--dragging");
-
-    function onResizeMove(moveEvent) {
-      legendManuallySized = true;
-      legendEl.style.width = `${Math.max(LEGEND_MIN_WIDTH, startWidth + (moveEvent.clientX - startX))}px`;
-      legendEl.style.height = `${Math.max(LEGEND_MIN_HEIGHT, startHeight + (moveEvent.clientY - startY))}px`;
-      updateLegendFontScale();
-    }
-    function onResizeUp() {
-      document.removeEventListener("mousemove", onResizeMove);
-      document.removeEventListener("mouseup", onResizeUp);
-      legendEl.classList.remove("legend--dragging");
-    }
-    document.addEventListener("mousemove", onResizeMove);
-    document.addEventListener("mouseup", onResizeUp);
-    return;
-  }
-
-  const startLeft = rect.left;
-  const startTop = rect.top;
-
-  legendEl.style.position = "fixed";
-  legendEl.style.left = `${startLeft}px`;
-  legendEl.style.top = `${startTop}px`;
-  legendEl.style.right = "auto";
-  legendEl.style.margin = "0";
-  legendEl.classList.add("legend--dragging");
-
-  function onMove(moveEvent) {
-    legendEl.style.left = `${startLeft + (moveEvent.clientX - startX)}px`;
-    legendEl.style.top = `${startTop + (moveEvent.clientY - startY)}px`;
-  }
-  function onUp() {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-    legendEl.classList.remove("legend--dragging");
-  }
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
+makeDraggableResizable(legendEl, {
+  minWidth: LEGEND_MIN_WIDTH,
+  minHeight: LEGEND_MIN_HEIGHT,
+  onResize: () => {
+    legendManuallySized = true;
+    updateLegendFontScale();
+  },
 });
+
+// Undocumented "?watermark=1" URL param: draws "www.atlasnazw.pl" at the
+// bottom center of the map, draggable/resizable like the legend, so
+// screenshots posted elsewhere carry the site's URL. No UI toggle for it
+// on purpose — it's meant for the person taking the screenshot, not a
+// feature to discover by clicking around.
+if (initialQuery.has("watermark")) {
+  const watermarkEl = document.createElement("div");
+  watermarkEl.className = "watermark draggable-box";
+  watermarkEl.textContent = "www.atlasnazw.pl";
+  document.body.appendChild(watermarkEl);
+  makeDraggableResizable(watermarkEl, {
+    minWidth: 60,
+    minHeight: 16,
+    onResize: () => {
+      watermarkEl.style.fontSize = `${watermarkEl.getBoundingClientRect().height * 0.6}px`;
+    },
+  });
+}
