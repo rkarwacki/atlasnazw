@@ -284,7 +284,7 @@ html, body {
 
 .advanced > summary::before {
   content: "▸";
-  font-size: 11px;
+  font-size: 16px;
   display: inline-block;
   transition: transform 0.15s ease;
 }

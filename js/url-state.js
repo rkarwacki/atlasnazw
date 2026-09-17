@@ -11,7 +11,7 @@ export const initialQuery = new URLSearchParams(window.location.search);
 export const initialHash = new URLSearchParams(window.location.hash.slice(1));
 
 const ALL_PLACE_TYPES = ["city", "village", "osada", "przysiolek"];
-const VALID_MATCH_TYPES = new Set(["suffix", "prefix", "contains", "exact"]);
+const VALID_MATCH_TYPES = new Set(["suffix", "prefix", "contains", "exact", "regex"]);
 
 export function validLang(v) {
   return v === "pl" || v === "en" ? v : null;
@@ -105,6 +105,7 @@ export function buildShareUrl({
   includeSubparts,
   showNamesFewResults,
   showNamesDeepZoom,
+  regexEnabled,
   rules,
 }) {
   const queryParams = new URLSearchParams();
@@ -130,6 +131,9 @@ export function buildShareUrl({
   // matches the default and doesn't need writing out.
   if (!showNamesDeepZoom) {
     hashParams.set("namesZoom", "0");
+  }
+  if (regexEnabled) {
+    hashParams.set("regex", "1");
   }
   if (rules.length) {
     hashParams.set("rules", encodeRules(rules));

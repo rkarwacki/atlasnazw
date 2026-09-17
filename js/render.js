@@ -8,12 +8,36 @@ import { map, markerLayer, updateLegendFontScale, setLegendRowCount, legendEl } 
 // ---------------------------------------------------------------------
 
 /**
+ * Compiles a regex rule's pattern once and caches it on the rule object
+ * (rules are never edited in place after creation, only their color/hidden
+ * flags, so the cache never goes stale). A pattern that fails to compile is
+ * cached as null so an invalid regex just never matches, instead of
+ * re-throwing on every place checked.
+ */
+function getRuleRegex(rule) {
+  if (rule._regexCache === undefined) {
+    try {
+      rule._regexCache = new RegExp(rule.pattern, "i");
+    } catch {
+      rule._regexCache = null;
+    }
+  }
+  return rule._regexCache;
+}
+
+/**
  * Returns the first rule whose pattern matches the given name, or null.
  * Matching is case-insensitive and diacritic-sensitive (ów !== ow).
  */
 function matchRule(name) {
   const lower = name.toLowerCase();
   for (const rule of state.rules) {
+    if (rule.matchType === "regex") {
+      if (!rule.pattern) continue;
+      const re = getRuleRegex(rule);
+      if (re && re.test(name)) return rule;
+      continue;
+    }
     const pattern = rule.pattern.toLowerCase();
     if (!pattern) continue;
     if (rule.matchType === "prefix" && lower.startsWith(pattern)) return rule;
@@ -26,13 +50,15 @@ function matchRule(name) {
 
 /**
  * Renders a rule's pattern with ellipses showing where it must appear in
- * a name, e.g. "…ów" for a suffix or "Kra…" for a prefix.
+ * a name, e.g. "…ów" for a suffix or "Kra…" for a prefix. Regex patterns
+ * are shown in /pattern/ literal notation instead.
  */
 function formatPatternDisplay(rule) {
   const escaped = escapeHtml(rule.pattern);
   if (rule.matchType === "prefix") return `${escaped}…`;
   if (rule.matchType === "contains") return `…${escaped}…`;
   if (rule.matchType === "exact") return escaped;
+  if (rule.matchType === "regex") return `/${escaped}/i`;
   return `…${escaped}`;
 }
 

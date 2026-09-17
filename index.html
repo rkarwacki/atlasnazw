@@ -104,6 +104,7 @@
               <option value="prefix" data-i18n="optionPrefix">Początek</option>
               <option value="contains" data-i18n="optionContains">Zawiera</option>
               <option value="exact" data-i18n="optionExact">Dokładnie</option>
+              <option value="regex" id="rule-match-type-regex-option" data-i18n="optionRegex" hidden>RegEx</option>
             </select>
             <input
               id="rule-suffix"
@@ -167,7 +168,7 @@
       </section>
 
       <details class="panel__section advanced">
-        <summary data-i18n="advancedSummary">Zaawansowane</summary>
+        <summary data-i18n="advancedSummary">Rozwiń opcje zaawansowane</summary>
         <div class="advanced__body">
           <h2 data-i18n="overlaysHeading">Nakładki mapy</h2>
           <label class="checkbox-row">
@@ -178,7 +179,7 @@
           <h2 data-i18n="subpartsHeading">Części miejscowości</h2>
           <label class="checkbox-row">
             <input type="checkbox" id="subparts-toggle" />
-            <span data-i18n="subpartsLabel">Dołącz części miejscowości (np. Zawisty-Króle jako część wsi Zawisty)</span>
+            <span data-i18n="subpartsLabel">Dołącz części miejscowości (np. Praga jako część Warszawy lub Zawisty-Króle jako część wsi Zawisty)</span>
           </label>
           <p class="hint" id="subparts-hint" data-i18n="subpartsHint">Dodaje ok. 53 tys. dodatkowych punktów — nazwane części wsi, miast i osad, doliczane do odpowiedniego typu w filtrze powyżej. Wczytywane dopiero po zaznaczeniu.</p>
           <p class="hint hidden" id="subparts-status"></p>
@@ -203,6 +204,13 @@
             <span data-i18n="showNamesZoomLabel">Pokaż nazwy przy odpowiednim przybliżeniu mapy</span>
           </label>
           <p class="hint" id="show-names-zoom-hint" data-i18n="showNamesZoomHint">Dostępne od poziomu przybliżenia 11 (obecnie: 0).</p>
+
+          <h2 data-i18n="regexHeading">Obsługa wyrażeń regularnych</h2>
+          <label class="checkbox-row">
+            <input type="checkbox" id="regex-toggle" />
+            <span data-i18n="regexToggleLabel">Włącz opcję „RegEx” na liście rodzajów dopasowania</span>
+          </label>
+          <p class="hint" data-i18n="regexHint">Dodaje „RegEx” do listy rodzajów dopasowania powyżej — pozwala dopasowywać nazwy wyrażeniem regularnym JavaScript zamiast prostego dopasowania, bez ukośników i flag, np. (ów|owo)$ dopasuje jedną regułą nazwy kończące się na „ów” lub „owo”. Dopasowanie nie rozróżnia wielkości liter i wystarczy, że wyrażenie pasuje do fragmentu nazwy — użyj ^ i $, aby wymagać dopasowania całej nazwy. Błędne wyrażenie po prostu niczego nie podświetli.</p>
 
           <h2 data-i18n="dataHeading">Dane miejscowości</h2>
           <p class="hint" id="place-count-line"></p>

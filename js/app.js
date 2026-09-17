@@ -65,6 +65,8 @@ const markerSizeInput = document.getElementById("marker-size-input");
 const markerSizeValueEl = document.getElementById("marker-size-value");
 const showNamesFewToggle = document.getElementById("show-names-few-toggle");
 const showNamesZoomToggle = document.getElementById("show-names-zoom-toggle");
+const regexToggle = document.getElementById("regex-toggle");
+const regexOptionEl = document.getElementById("rule-match-type-regex-option");
 const panelEl = document.getElementById("panel");
 const panelToggleBtn = document.getElementById("panel-toggle");
 const panelHandleBtn = document.getElementById("panel-handle");
@@ -103,12 +105,46 @@ function showRuleFeedback(className, textKey) {
 // Phones auto-capitalize the first letter of a text field, which turns
 // e.g. "ino" into "Ino" (easily misread as "Ino"/"lno"). Rules already
 // match case-insensitively, so the field is forced to lowercase as you
-// type to avoid the confusing capital.
+// type to avoid the confusing capital. Regex patterns are left alone:
+// lowercasing would silently mangle case-sensitive syntax like \B vs \b.
 ruleSuffixInput.addEventListener("input", () => {
+  if (ruleMatchTypeSelect.value === "regex") return;
   const { selectionStart, selectionEnd } = ruleSuffixInput;
   ruleSuffixInput.value = ruleSuffixInput.value.toLowerCase();
   ruleSuffixInput.setSelectionRange(selectionStart, selectionEnd);
 });
+
+// The example placeholder only makes sense per match type (a suffix example
+// looks like nonsense syntax for a regex, and vice versa).
+function updateSuffixPlaceholder() {
+  ruleSuffixInput.dataset.i18nPlaceholder =
+    ruleMatchTypeSelect.value === "regex" ? "suffixPlaceholderRegex" : "suffixPlaceholder";
+  ruleSuffixInput.placeholder = t(ruleSuffixInput.dataset.i18nPlaceholder);
+}
+ruleMatchTypeSelect.addEventListener("change", updateSuffixPlaceholder);
+
+// "RegEx" is hidden from the match-type dropdown by default (see the
+// "Obsługa wyrażeń regularnych" advanced section) so it doesn't confuse
+// people who have no use for it. Turning the option off only hides it from
+// the dropdown -- any regex rule already added keeps matching.
+regexToggle.addEventListener("change", () => {
+  state.regexEnabled = regexToggle.checked;
+  regexOptionEl.hidden = !state.regexEnabled;
+  if (!state.regexEnabled && ruleMatchTypeSelect.value === "regex") {
+    ruleMatchTypeSelect.value = "suffix";
+    updateSuffixPlaceholder();
+  }
+  syncUrl();
+});
+
+function isValidRegex(pattern) {
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function isDuplicateRule(pattern, matchType) {
   const lowerPattern = pattern.toLowerCase();
@@ -123,6 +159,10 @@ ruleForm.addEventListener("submit", (e) => {
   if (!pattern.trim()) return;
 
   const matchType = ruleMatchTypeSelect.value;
+  if (matchType === "regex" && !isValidRegex(pattern)) {
+    showRuleFeedback("rule-form__add--duplicate", "addRuleInvalidRegex");
+    return;
+  }
   if (isDuplicateRule(pattern, matchType)) {
     showRuleFeedback("rule-form__add--duplicate", "addRuleDuplicate");
     return;
@@ -275,6 +315,13 @@ const decoded = decodeRules(initialHash.get("rules"), state.nextRuleId, nextSugg
 if (decoded) {
   state.rules = decoded.rules;
   state.nextRuleId = decoded.nextId;
+  // A shared link's rules may use "regex" even without ?regex=1 (e.g. an
+  // older link from before that flag existed) -- keep the checkbox/dropdown
+  // consistent with what's actually active rather than hiding a rule type
+  // that's already in use.
+  if (state.rules.some((r) => r.matchType === "regex")) {
+    state.regexEnabled = true;
+  }
 } else {
   const owColor = nextSuggestedColor();
   const owoColor = nextSuggestedColor();
@@ -282,6 +329,8 @@ if (decoded) {
   state.rules.push({ id: state.nextRuleId++, pattern: "owo", matchType: "suffix", color: owColor });
 }
 ruleColorInput.value = nextSuggestedColor();
+regexToggle.checked = state.regexEnabled;
+regexOptionEl.hidden = !state.regexEnabled;
 
 syncTypeFilterUI();
 syncMarkerSizeUI();

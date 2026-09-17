@@ -9,7 +9,7 @@ import { getLang } from "./i18n.js";
 const basePlaces = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
 export const state = {
-  /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains"|"exact", color: string, hidden?: boolean}[]} */
+  /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains"|"exact"|"regex", color: string, hidden?: boolean}[]} */
   rules: [],
   nextRuleId: 1,
 
@@ -41,6 +41,13 @@ export const state = {
   // namesZoom=0, see buildShareUrl).
   showNamesFewResults: initialHash.get("namesFew") === "1",
   showNamesDeepZoom: initialHash.has("namesZoom") ? initialHash.get("namesZoom") === "1" : true,
+
+  // Gates the "RegEx" match-type option behind an opt-in checkbox (see the
+  // "Obsługa wyrażeń regularnych" advanced section) so casual users don't
+  // see it by default. app.js also forces this on when a shared link's
+  // rules already use it, so the recipient's dropdown/checkbox stays
+  // consistent with what's actually active.
+  regexEnabled: initialHash.get("regex") === "1",
 };
 
 function rebuildPlacesList() {
@@ -90,6 +97,7 @@ export function buildShareUrl() {
     includeSubparts: state.includeSubparts,
     showNamesFewResults: state.showNamesFewResults,
     showNamesDeepZoom: state.showNamesDeepZoom,
+    regexEnabled: state.regexEnabled,
     rules: state.rules,
   });
 }
