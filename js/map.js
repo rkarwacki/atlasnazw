@@ -13,26 +13,32 @@ export const map = L.map("map", {
   // Thousands of circle markers render far faster on canvas than SVG.
   preferCanvas: true,
 });
-// Module scripts don't block on a still-pending external stylesheet (unlike
-// the classic script this used to be), so Leaflet can measure the map
-// container before its CSS has been applied and cache the wrong size.
-// invalidateSize() forces a fresh measurement so fitBounds below is correct.
+// Module scripts don't block on a still-pending external stylesheet in
+// Chromium and WebKit (Firefox does, per spec) -- so on a slow first load,
+// Leaflet can measure the map container before leaflet.css/fonts have been
+// applied and get a zero size. invalidateSize() forces a fresh measurement
+// so fitBounds below is correct.
 map.invalidateSize();
-
-// Belt-and-braces for a slow first load: if leaflet.css (or the web font)
-// is still loading when the block above runs, that immediate invalidateSize()
-// call can itself capture a zero-size container -- Leaflet then never
-// recovers on its own, leaving a blank map until the page is reloaded with
-// everything cached. `load` fires only once every stylesheet, font and image
-// has actually finished, so this re-measurement is always correct.
-window.addEventListener("load", () => map.invalidateSize());
 
 // Fit to Poland's actual extent rather than a fixed zoom level, so narrow
 // (mobile portrait) viewports zoom out further and still show it in full.
-map.fitBounds([
+const POLAND_BOUNDS = [
   [49.0, 14.1],
   [54.9, 24.15],
-]);
+];
+map.fitBounds(POLAND_BOUNDS);
+
+// Belt-and-braces for the same race: if the container was still zero-size
+// at the calls above, fitBounds computed a degenerate zoom/center from it,
+// and a bare invalidateSize() later wouldn't fix that -- it only updates
+// pixel dimensions, not a zoom/center already computed from a wrong one.
+// Re-running fitBounds too guarantees a correct final view. `load` fires
+// only once every stylesheet, font and image has actually finished, so by
+// then the container's real size is guaranteed to be in effect.
+window.addEventListener("load", () => {
+  map.invalidateSize();
+  map.fitBounds(POLAND_BOUNDS);
+});
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
