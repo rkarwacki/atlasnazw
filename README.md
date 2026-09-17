@@ -94,9 +94,10 @@ coordinates (WGS 84).
   - **`"przysiolek"` (10,244 records)** merges `przysiółek` (152), `przysiółek
     wsi` (9,952), `przysiółek kolonii` (74), and `przysiółek osady` (66) —
     every przysiółek (hamlet) regardless of what it's formally attached to.
-  - Still **not** included: `część wsi`/`część miasta`/`część osady` (part of
-    a village/city/osada, not a separate locality), `kolonia`/`kolonia wsi`
-    etc., `leśniczówka`, `osiedle`, and `schronisko turystyczne`.
+  - Still **not** included: `kolonia`/`kolonia wsi` etc., `leśniczówka`,
+    `osiedle`, and `schronisko turystyczne`. (`część wsi`/`część
+    miasta`/`część osady` — named parts of a larger locality — aren't missing;
+    they're covered separately, see [Sub-parts of places](#sub-parts-of-places-places-poland-partsjs) below.)
 - License: **CC BY 4.0** for both. Attribution: data derived from the PRNG
   register via mbroton/polish-geonames and, for the `osada`/`przysiolek`
   records, directly from PRNG (CC BY 4.0). Keep this notice if you

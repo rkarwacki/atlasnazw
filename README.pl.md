@@ -96,9 +96,10 @@ polskich miast, wsi, osad i przysiółków ze współrzędnymi (WGS 84).
     `przysiółek wsi` (9952), `przysiółek kolonii` (74) i `przysiółek osady`
     (66) — każdy przysiółek niezależnie od tego, do czego jest formalnie
     przypisany.
-  - Nadal **nie uwzględnione**: `część wsi`/`część miasta`/`część osady`
-    (część wsi/miasta/osady, nie osobna miejscowość), `kolonia`/`kolonia
-    wsi` itp., `leśniczówka`, `osiedle` i `schronisko turystyczne`.
+  - Nadal **nie uwzględnione**: `kolonia`/`kolonia wsi` itp., `leśniczówka`,
+    `osiedle` i `schronisko turystyczne`. (`część wsi`/`część miasta`/`część
+    osady` — nazwane części większej miejscowości — nie są pominięte, tylko
+    opisane osobno, patrz [Części miejscowości](#części-miejscowości-places-poland-partsjs) niżej.)
 - Licencja: **CC BY 4.0** dla obu źródeł. Atrybucja: dane pochodzą z rejestru
   PRNG za pośrednictwem mbroton/polish-geonames, a dla rekordów
   `osada`/`przysiolek` — bezpośrednio z PRNG (CC BY 4.0). Zachowaj tę

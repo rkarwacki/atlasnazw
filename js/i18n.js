@@ -73,7 +73,7 @@ const TRANSLATIONS = {
     dataHeading: "Dane miejscowości",
     placeCountText: "Liczba wczytanych miejscowości: {count} — {source}.",
     sourcePoland:
-      "miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz README)",
+      'miejscowości z Państwowego Rejestru Nazw Geograficznych (PRNG, CC BY 4.0 — zobacz <a href="https://github.com/rkarwacki/atlasnazw/blob/main/README.pl.md" target="_blank" rel="noopener">README</a>)',
     removeRuleTitle: "Usuń regułę",
     changeColorTitle: "Zmień kolor",
     hideRuleTitle: "Ukryj na mapie",
@@ -81,6 +81,7 @@ const TRANSLATIONS = {
     noActiveRules: "Brak aktywnych reguł",
     matchesPattern: "pasuje do „{display}”",
     aboutHeading: "O projekcie",
+    authorLine: "Autor: Radosław Karwacki",
     attributionHeading: "Źródła danych",
     attributionPlaces:
       "Miejscowości: Państwowy Rejestr Nazw Geograficznych (PRNG), licencja CC BY 4.0 — miasta i wsie via mbroton/polish-geonames, osady i przysiółki wyodrębnione bezpośrednio z eksportu PRNG.",
@@ -153,7 +154,7 @@ const TRANSLATIONS = {
     dataHeading: "Place data",
     placeCountText: "Loaded places: {count} — {source}.",
     sourcePoland:
-      "places from the National Register of Geographic Names (PRNG, CC BY 4.0 — see README)",
+      'places from the National Register of Geographic Names (PRNG, CC BY 4.0 — see <a href="https://github.com/rkarwacki/atlasnazw/blob/main/README.md" target="_blank" rel="noopener">README</a>)',
     removeRuleTitle: "Remove rule",
     changeColorTitle: "Change color",
     hideRuleTitle: "Hide on map",
@@ -161,6 +162,7 @@ const TRANSLATIONS = {
     noActiveRules: "No active rules",
     matchesPattern: "matches „{display}”",
     aboutHeading: "About",
+    authorLine: "Author: Radosław Karwacki",
     attributionHeading: "Data sources",
     attributionPlaces:
       "Places: National Register of Geographic Names (PRNG), CC BY 4.0 license — cities and villages via mbroton/polish-geonames, osady and przysiółki extracted directly from the PRNG export.",

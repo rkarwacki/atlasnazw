@@ -140,7 +140,9 @@ export function render() {
   renderRuleList(counts);
   renderLegend(counts);
   syncShowNamesUI(lastVisibleCount, map.getZoom());
-  placeCountLineEl.textContent = t("placeCountText", {
+  // innerHTML, not textContent: sourcePoland embeds a README link. Safe --
+  // both pieces come from the translation dictionary, never user input.
+  placeCountLineEl.innerHTML = t("placeCountText", {
     count: state.places.length,
     source: t("sourcePoland"),
   });
