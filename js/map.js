@@ -13,32 +13,18 @@ export const map = L.map("map", {
   // Thousands of circle markers render far faster on canvas than SVG.
   preferCanvas: true,
 });
-// Module scripts don't block on a still-pending external stylesheet in
-// Chromium and WebKit (Firefox does, per spec) -- so on a slow first load,
-// Leaflet can measure the map container before leaflet.css/fonts have been
-// applied and get a zero size. invalidateSize() forces a fresh measurement
-// so fitBounds below is correct.
+// Module scripts don't block on a still-pending external stylesheet (unlike
+// the classic script this used to be), so Leaflet can measure the map
+// container before its CSS has been applied and cache the wrong size.
+// invalidateSize() forces a fresh measurement so fitBounds below is correct.
 map.invalidateSize();
 
 // Fit to Poland's actual extent rather than a fixed zoom level, so narrow
 // (mobile portrait) viewports zoom out further and still show it in full.
-const POLAND_BOUNDS = [
+map.fitBounds([
   [49.0, 14.1],
   [54.9, 24.15],
-];
-map.fitBounds(POLAND_BOUNDS);
-
-// Belt-and-braces for the same race: if the container was still zero-size
-// at the calls above, fitBounds computed a degenerate zoom/center from it,
-// and a bare invalidateSize() later wouldn't fix that -- it only updates
-// pixel dimensions, not a zoom/center already computed from a wrong one.
-// Re-running fitBounds too guarantees a correct final view. `load` fires
-// only once every stylesheet, font and image has actually finished, so by
-// then the container's real size is guaranteed to be in effect.
-window.addEventListener("load", () => {
-  map.invalidateSize();
-  map.fitBounds(POLAND_BOUNDS);
-});
+]);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
@@ -67,7 +53,7 @@ const PARTITION_NAME_KEYS = {
 // default overlayPane sits at z-index 400) but above the tile layer.
 map.createPane("partitionsPane");
 map.getPane("partitionsPane").style.zIndex = 350;
-export const partitionsLayer = L.geoJSON({ type: "FeatureCollection", features: [] }, {
+export const partitionsLayer = L.geoJSON(window.PARTITIONS_GEOJSON || { type: "FeatureCollection", features: [] }, {
   pane: "partitionsPane",
   style: (feature) => ({
     color: PARTITION_COLORS[feature.properties.id] || "#888",
@@ -82,29 +68,6 @@ export const partitionsLayer = L.geoJSON({ type: "FeatureCollection", features: 
     });
   },
 });
-
-let partitionsLoadPromise = null;
-
-/**
- * Lazily fetches partitions-poland.js (the zabory GeoJSON overlay) instead
- * of loading it unconditionally on every page view -- it's off by default,
- * so most visitors never need it. Only once -- repeat calls reuse the same
- * promise.
- */
-export function loadPartitionsData() {
-  if (partitionsLoadPromise) return partitionsLoadPromise;
-  partitionsLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "partitions-poland.js";
-    script.onload = () => {
-      if (window.PARTITIONS_GEOJSON) partitionsLayer.addData(window.PARTITIONS_GEOJSON);
-      resolve();
-    };
-    script.onerror = () => reject(new Error("Failed to load partitions-poland.js"));
-    document.head.appendChild(script);
-  });
-  return partitionsLoadPromise;
-}
 
 export const markerLayer = L.layerGroup().addTo(map);
 
