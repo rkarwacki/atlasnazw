@@ -6,7 +6,7 @@ import { getLang } from "./i18n.js";
 // ---------------------------------------------------------------------
 
 /** @type {{name: string, lat: number, lon: number, type?: "city"|"village"|"osada"|"przysiolek"}[]} */
-const basePlaces = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
+let basePlaces = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
 
 export const state = {
   /** @type {{id: number, pattern: string, matchType: "suffix"|"prefix"|"contains"|"exact"|"regex", color: string, hidden?: boolean}[]} */
@@ -58,6 +58,31 @@ function rebuildPlacesList() {
 
 export function rebuildPlaces() {
   state.places = rebuildPlacesList();
+}
+
+let basePlacesLoadPromise = null;
+
+/**
+ * Lazily fetches places-poland.js (the ~63k-place core dataset, several MB
+ * uncompressed) instead of loading it as a render-blocking <script> in the
+ * page -- that let the map, tiles and UI shell paint immediately, with this
+ * called right after so the data streams in behind the loading overlay.
+ * Only once -- repeat calls reuse the same promise.
+ */
+export function loadBasePlaces() {
+  if (basePlacesLoadPromise) return basePlacesLoadPromise;
+  basePlacesLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "places-poland.js";
+    script.onload = () => {
+      basePlaces = Array.isArray(window.POLAND_PLACES) ? window.POLAND_PLACES : [];
+      rebuildPlaces();
+      resolve();
+    };
+    script.onerror = () => reject(new Error("Failed to load places-poland.js"));
+    document.head.appendChild(script);
+  });
+  return basePlacesLoadPromise;
 }
 
 let subpartsLoadPromise = null;

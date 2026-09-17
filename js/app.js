@@ -1,8 +1,8 @@
-import { state, syncUrl, buildShareUrl, rebuildPlaces, loadSubparts } from "./state.js";
+import { state, syncUrl, buildShareUrl, rebuildPlaces, loadBasePlaces, loadSubparts } from "./state.js";
 import { initialHash, decodeRules } from "./url-state.js";
 import { t, getLang, setLang, applyStaticTranslations } from "./i18n.js";
 import { nextSuggestedColor } from "./colors.js";
-import { map, partitionsLayer } from "./map.js";
+import { map, partitionsLayer, loadPartitionsData } from "./map.js";
 import { render, applyMarkerStyle } from "./render.js";
 
 // moveend covers panning as well as zooming (it fires after zoomend too),
@@ -196,6 +196,7 @@ partitionsToggle.addEventListener("change", () => {
   state.showPartitions = partitionsToggle.checked;
   if (state.showPartitions) {
     partitionsLayer.addTo(map);
+    loadPartitionsData();
   } else {
     partitionsLayer.remove();
   }
@@ -335,7 +336,10 @@ regexOptionEl.hidden = !state.regexEnabled;
 syncTypeFilterUI();
 syncMarkerSizeUI();
 partitionsToggle.checked = state.showPartitions;
-if (state.showPartitions) partitionsLayer.addTo(map);
+if (state.showPartitions) {
+  partitionsLayer.addTo(map);
+  loadPartitionsData();
+}
 applyStaticTranslations();
 updateLangSwitchUI();
 render();
@@ -347,5 +351,12 @@ if (window.matchMedia("(max-width: 760px)").matches) {
   setPanelCollapsed(true);
 }
 
+// The map, tiles and UI shell above are already interactive at this point;
+// the place dataset itself (several MB) streams in behind the loading
+// overlay instead of blocking that initial paint (see loadBasePlaces).
 const loadingOverlay = document.getElementById("loading-overlay");
-if (loadingOverlay) loadingOverlay.classList.add("is-hidden");
+loadBasePlaces()
+  .then(render)
+  .finally(() => {
+    if (loadingOverlay) loadingOverlay.classList.add("is-hidden");
+  });

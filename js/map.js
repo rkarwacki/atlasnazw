@@ -53,7 +53,7 @@ const PARTITION_NAME_KEYS = {
 // default overlayPane sits at z-index 400) but above the tile layer.
 map.createPane("partitionsPane");
 map.getPane("partitionsPane").style.zIndex = 350;
-export const partitionsLayer = L.geoJSON(window.PARTITIONS_GEOJSON || { type: "FeatureCollection", features: [] }, {
+export const partitionsLayer = L.geoJSON({ type: "FeatureCollection", features: [] }, {
   pane: "partitionsPane",
   style: (feature) => ({
     color: PARTITION_COLORS[feature.properties.id] || "#888",
@@ -68,6 +68,29 @@ export const partitionsLayer = L.geoJSON(window.PARTITIONS_GEOJSON || { type: "F
     });
   },
 });
+
+let partitionsLoadPromise = null;
+
+/**
+ * Lazily fetches partitions-poland.js (the zabory GeoJSON overlay) instead
+ * of loading it unconditionally on every page view -- it's off by default,
+ * so most visitors never need it. Only once -- repeat calls reuse the same
+ * promise.
+ */
+export function loadPartitionsData() {
+  if (partitionsLoadPromise) return partitionsLoadPromise;
+  partitionsLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "partitions-poland.js";
+    script.onload = () => {
+      if (window.PARTITIONS_GEOJSON) partitionsLayer.addData(window.PARTITIONS_GEOJSON);
+      resolve();
+    };
+    script.onerror = () => reject(new Error("Failed to load partitions-poland.js"));
+    document.head.appendChild(script);
+  });
+  return partitionsLoadPromise;
+}
 
 export const markerLayer = L.layerGroup().addTo(map);
 
